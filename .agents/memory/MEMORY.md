@@ -1,0 +1,2 @@
+- [Orval + Zod v3 compatibility](orval-zod-compat.md) — never use `type: integer` or `format: email` in OpenAPI spec when Orval v8 + Zod v3 are in use.
+- [Planton design system tokens](planton-ds-tokens.md) — primary #155EEF, accent #0E9384, Inter font; tokens.json is the only source of truth.

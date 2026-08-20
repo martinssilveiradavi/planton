@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Planton"
+description = "Plataforma para médicos encontrarem plantões médicos disponíveis próximos à sua localização, e para hospitais e clínicas publicarem vagas rapidamente. Inclui mapa + lista de plantões, filtros por especialidade/data/valor, fluxo de candidatura para médicos e fluxo de publicação/gestão de vagas para hospitais."
+version = "1.0.0"
+id = "artifacts/planton-app"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20759
+
+[services.development]
+run = "pnpm --filter @workspace/planton-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/planton-app", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/planton-app/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20759"
+BASE_PATH = "/"

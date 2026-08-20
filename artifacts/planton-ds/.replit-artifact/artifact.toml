@@ -1,0 +1,19 @@
+kind = "design-system"
+previewPath = "/planton-ds/"
+title = "Planton Design System"
+description = "Design system visual da plataforma Planton — tokens de cor, tipografia, espaçamento e componentes shadcn/Tailwind para a plataforma de plantões médicos."
+version = "1.0.0"
+id = "artifacts/planton-ds"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/planton-ds/" ]
+localPort = 21390
+
+[services.development]
+run = "pnpm --filter @workspace/planton-ds run dev"
+
+[services.env]
+PORT = "21390"
+BASE_PATH = "/planton-ds/"

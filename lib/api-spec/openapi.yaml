@@ -1,0 +1,665 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 1.0.0
+  description: Planton — Plataforma de Plantões Médicos
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: shifts
+    description: Plantões médicos
+  - name: applications
+    description: Candidaturas de médicos
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ── Auth ──────────────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Registrar novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Usuário criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Dados inválidos ou e-mail já existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Entrar na conta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [auth]
+      summary: Encerrar sessão
+      responses:
+        "204":
+          description: Sessão encerrada
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Usuário logado atual
+      responses:
+        "200":
+          description: Dados do usuário
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Shifts ─────────────────────────────────────────────────────────────────
+  /shifts:
+    get:
+      operationId: listShifts
+      tags: [shifts]
+      summary: Listar plantões com filtros
+      parameters:
+        - name: specialty
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: date
+          in: query
+          schema:
+            type: string
+        - name: minValue
+          in: query
+          schema:
+            type: number
+        - name: maxValue
+          in: query
+          schema:
+            type: number
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: maxDistanceKm
+          in: query
+          schema:
+            type: number
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ABERTO, PREENCHIDO, CANCELADO, ENCERRADO]
+        - name: page
+          in: query
+          schema:
+            type: number
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: number
+            default: 20
+      responses:
+        "200":
+          description: Lista de plantões
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShiftList"
+
+    post:
+      operationId: createShift
+      tags: [shifts]
+      summary: Publicar novo plantão (hospital)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShiftInput"
+      responses:
+        "201":
+          description: Plantão criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shift"
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /shifts/stats:
+    get:
+      operationId: getShiftStats
+      tags: [shifts]
+      summary: Estatísticas de plantões disponíveis (dashboard)
+      responses:
+        "200":
+          description: Estatísticas agregadas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShiftStats"
+
+  /shifts/{id}:
+    get:
+      operationId: getShift
+      tags: [shifts]
+      summary: Detalhes de um plantão
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Plantão encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shift"
+        "404":
+          description: Plantão não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: updateShift
+      tags: [shifts]
+      summary: Atualizar plantão (hospital dono)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShiftUpdate"
+      responses:
+        "200":
+          description: Plantão atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shift"
+        "404":
+          description: Plantão não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: deleteShift
+      tags: [shifts]
+      summary: Remover plantão
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Removido
+        "404":
+          description: Não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /shifts/{id}/applications:
+    get:
+      operationId: listShiftApplications
+      tags: [shifts]
+      summary: Candidatos de um plantão (hospital dono)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Lista de candidaturas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+        "404":
+          description: Plantão não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Applications ──────────────────────────────────────────────────────────
+  /applications:
+    get:
+      operationId: listApplications
+      tags: [applications]
+      summary: Candidaturas do usuário logado
+      responses:
+        "200":
+          description: Lista de candidaturas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+
+    post:
+      operationId: createApplication
+      tags: [applications]
+      summary: Candidatar-se a um plantão (médico)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationInput"
+      responses:
+        "201":
+          description: Candidatura criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "400":
+          description: Dados inválidos ou já candidatado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /applications/{id}:
+    patch:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Atualizar status de candidatura (hospital seleciona/rejeita)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUpdate"
+      responses:
+        "200":
+          description: Candidatura atualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "404":
+          description: Candidatura não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    # ── User ───────────────────────────────────────────────────────────────
+    User:
+      type: object
+      required: [id, name, email, type, createdAt]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        email:
+          type: string
+        type:
+          type: string
+          enum: [doctor, hospital]
+        specialty:
+          type: ["string", "null"]
+        crmNumber:
+          type: ["string", "null"]
+        hospitalName:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        state:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    UserInput:
+      type: object
+      required: [name, email, password, type]
+      properties:
+        name:
+          type: string
+          minLength: 2
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 6
+        type:
+          type: string
+          enum: [doctor, hospital]
+        specialty:
+          type: string
+        crmNumber:
+          type: string
+        hospitalName:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    # ── Shift ──────────────────────────────────────────────────────────────
+    Shift:
+      type: object
+      required: [id, hospitalId, hospitalName, title, specialty, date, startTime, endTime, remuneration, address, city, state, status, createdAt]
+      properties:
+        id:
+          type: number
+        hospitalId:
+          type: number
+        hospitalName:
+          type: string
+        title:
+          type: string
+        specialty:
+          type: string
+        description:
+          type: ["string", "null"]
+        requirements:
+          type: ["string", "null"]
+        date:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        remuneration:
+          type: number
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        latitude:
+          type: ["number", "null"]
+        longitude:
+          type: ["number", "null"]
+        status:
+          type: string
+          enum: [ABERTO, PREENCHIDO, CANCELADO, ENCERRADO]
+        applicationsCount:
+          type: number
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ShiftInput:
+      type: object
+      required: [title, specialty, date, startTime, endTime, remuneration, address, city, state]
+      properties:
+        title:
+          type: string
+          minLength: 3
+        specialty:
+          type: string
+          minLength: 2
+        description:
+          type: string
+        requirements:
+          type: string
+        date:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        remuneration:
+          type: number
+          minimum: 0
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    ShiftUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        specialty:
+          type: string
+        description:
+          type: string
+        requirements:
+          type: string
+        date:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        remuneration:
+          type: number
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        status:
+          type: string
+          enum: [ABERTO, PREENCHIDO, CANCELADO, ENCERRADO]
+
+    ShiftList:
+      type: object
+      required: [shifts, total, page, limit]
+      properties:
+        shifts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Shift"
+        total:
+          type: number
+        page:
+          type: number
+        limit:
+          type: number
+
+    ShiftStats:
+      type: object
+      required: [totalOpen, totalToday, bySpecialty, recentlyAdded]
+      properties:
+        totalOpen:
+          type: number
+        totalToday:
+          type: number
+        bySpecialty:
+          type: array
+          items:
+            type: object
+            required: [specialty, count]
+            properties:
+              specialty:
+                type: string
+              count:
+                type: number
+        recentlyAdded:
+          type: array
+          items:
+            $ref: "#/components/schemas/Shift"
+
+    # ── Application ────────────────────────────────────────────────────────
+    Application:
+      type: object
+      required: [id, shiftId, doctorId, status, createdAt]
+      properties:
+        id:
+          type: number
+        shiftId:
+          type: number
+        doctorId:
+          type: number
+        doctorName:
+          type: ["string", "null"]
+        doctorSpecialty:
+          type: ["string", "null"]
+        doctorCrm:
+          type: ["string", "null"]
+        shift:
+          $ref: "#/components/schemas/Shift"
+        status:
+          type: string
+          enum: [PENDENTE, SELECIONADO, REJEITADO]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ApplicationInput:
+      type: object
+      required: [shiftId]
+      properties:
+        shiftId:
+          type: number
+        notes:
+          type: string
+
+    ApplicationUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [PENDENTE, SELECIONADO, REJEITADO]
+        notes:
+          type: string
