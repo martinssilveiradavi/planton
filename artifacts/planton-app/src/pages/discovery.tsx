@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Button } from '@workspace/planton-ds/components/ui/button';
 import { Input } from '@workspace/planton-ds/components/ui/input';
 import { Label } from '@workspace/planton-ds/components/ui/label';
@@ -37,6 +37,7 @@ type MobileTab = 'list' | 'map';
 export default function Discovery() {
   const [mobileTab, setMobileTab] = useState<MobileTab>('list');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedShiftId, setSelectedShiftId] = useState<number>();
   const [filters, setFilters] = useState<ListShiftsParams>({ status: 'ABERTO' });
   const [draftFilters, setDraftFilters] = useState<ListShiftsParams>({ status: 'ABERTO' });
 
@@ -52,6 +53,7 @@ export default function Discovery() {
 
   const applyFilters = () => {
     setFilters({ ...draftFilters, status: 'ABERTO' });
+    setSelectedShiftId(undefined);
     setShowFilters(false);
   };
 
@@ -59,8 +61,16 @@ export default function Discovery() {
     const clean = { status: 'ABERTO' as const };
     setDraftFilters(clean);
     setFilters(clean);
+    setSelectedShiftId(undefined);
     setShowFilters(false);
   };
+
+  useEffect(() => {
+    if (!selectedShiftId) return;
+    document
+      .querySelector(`[data-testid="card-shift-${selectedShiftId}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [selectedShiftId]);
 
   const activeFilterCount = Object.entries(filters).filter(
     ([k, v]) => k !== 'status' && v !== undefined && v !== ''
@@ -272,7 +282,17 @@ export default function Discovery() {
                 )}
               </div>
             ) : (
-              shifts.map((shift) => <ShiftCard key={shift.id} shift={shift} />)
+              shifts.map((shift) => (
+                <ShiftCard
+                  key={shift.id}
+                  shift={shift}
+                  isSelected={selectedShiftId === shift.id}
+                  onMapFocus={() => {
+                    setSelectedShiftId(shift.id);
+                    setMobileTab('map');
+                  }}
+                />
+              ))
             )}
           </div>
         </div>
@@ -292,7 +312,12 @@ export default function Discovery() {
               </div>
             }
           >
-            <ShiftMap shifts={shifts} className="h-full rounded-xl overflow-hidden" />
+            <ShiftMap
+              shifts={shifts}
+              selectedShiftId={selectedShiftId}
+              onSelectShift={(shiftId) => setSelectedShiftId(shiftId)}
+              className="h-full rounded-xl"
+            />
           </Suspense>
         </div>
       </div>

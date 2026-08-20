@@ -3,7 +3,7 @@ import { Badge } from '@workspace/planton-ds/components/ui/badge';
 import { Button } from '@workspace/planton-ds/components/ui/button';
 import { cn } from '@workspace/planton-ds/lib/utils';
 import { Shift } from '@workspace/api-client-react';
-import { MapPin, Clock, Calendar } from 'lucide-react';
+import { Calendar, Clock, MapPin, MapPinned } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -57,12 +57,22 @@ function statusLabel(status: Shift['status']) {
 interface ShiftCardProps {
   shift: Shift;
   compact?: boolean;
+  isSelected?: boolean;
+  onMapFocus?: () => void;
 }
 
-export function ShiftCard({ shift, compact = false }: ShiftCardProps) {
+export function ShiftCard({
+  shift,
+  compact = false,
+  isSelected = false,
+  onMapFocus,
+}: ShiftCardProps) {
   return (
     <div
-      className="bg-card border border-border rounded-xl p-4 hover:shadow-md transition-shadow duration-200 group"
+      className={cn(
+        'bg-card border border-border rounded-xl p-4 hover:shadow-md transition-all duration-200 group',
+        isSelected && 'border-primary ring-2 ring-primary/20'
+      )}
       data-testid={`card-shift-${shift.id}`}
     >
       <div className="flex items-start justify-between gap-2 mb-3">
@@ -112,11 +122,27 @@ export function ShiftCard({ shift, compact = false }: ShiftCardProps) {
             </p>
           )}
         </div>
-        <Link href={`/shifts/${shift.id}`}>
-          <Button size="sm" variant="secondary" data-testid={`button-ver-mais-${shift.id}`}>
-            Ver mais
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {onMapFocus && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="gap-1.5 px-2 text-muted-foreground"
+              onClick={onMapFocus}
+              aria-label={`Mostrar ${shift.hospitalName} no mapa`}
+              data-testid={`button-map-focus-${shift.id}`}
+            >
+              <MapPinned className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Mapa</span>
+            </Button>
+          )}
+          <Link href={`/shifts/${shift.id}`}>
+            <Button size="sm" variant="secondary" data-testid={`button-ver-mais-${shift.id}`}>
+              Ver mais
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );
