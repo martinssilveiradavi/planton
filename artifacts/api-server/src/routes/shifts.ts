@@ -39,6 +39,10 @@ function formatShift(shift: typeof shiftsTable.$inferSelect, hospitalName: strin
   };
 }
 
+function hasCompleteCoordinates(latitude: number | null | undefined, longitude: number | null | undefined) {
+  return (latitude == null && longitude == null) || (latitude != null && longitude != null);
+}
+
 // GET /shifts - list with filters
 router.get("/shifts", async (req: Request, res: Response): Promise<void> => {
   const parsed = ListShiftsQueryParams.safeParse(req.query);
@@ -46,7 +50,6 @@ router.get("/shifts", async (req: Request, res: Response): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-
   const { specialty, city, date, minValue, maxValue, status, page = 1, limit = 20 } = parsed.data;
 
   const conditions = [];
@@ -73,14 +76,14 @@ router.get("/shifts", async (req: Request, res: Response): Promise<void> => {
   const rows = await db
     .select({
       shift: shiftsTable,
-      hospitalName: usersTable.name,
+      hospitalName: usersTable.hospitalName,
       applicationsCount: sql<number>`count(${applicationsTable.id})::int`,
     })
     .from(shiftsTable)
     .leftJoin(usersTable, eq(shiftsTable.hospitalId, usersTable.id))
     .leftJoin(applicationsTable, eq(shiftsTable.id, applicationsTable.shiftId))
     .where(and(...conditions))
-    .groupBy(shiftsTable.id, usersTable.name)
+    .groupBy(shiftsTable.id, usersTable.hospitalName)
     .orderBy(desc(shiftsTable.createdAt))
     .limit(limit)
     .offset(offset);
@@ -120,7 +123,7 @@ router.get("/shifts/stats", async (_req: Request, res: Response): Promise<void> 
   const recentRows = await db
     .select({
       shift: shiftsTable,
-      hospitalName: usersTable.name,
+      hospitalName: usersTable.hospitalName,
     })
     .from(shiftsTable)
     .leftJoin(usersTable, eq(shiftsTable.hospitalId, usersTable.id))
@@ -146,14 +149,14 @@ router.get("/shifts/:id", async (req: Request, res: Response): Promise<void> => 
   const [row] = await db
     .select({
       shift: shiftsTable,
-      hospitalName: usersTable.name,
+      hospitalName: usersTable.hospitalName,
       applicationsCount: sql<number>`count(${applicationsTable.id})::int`,
     })
     .from(shiftsTable)
     .leftJoin(usersTable, eq(shiftsTable.hospitalId, usersTable.id))
     .leftJoin(applicationsTable, eq(shiftsTable.id, applicationsTable.shiftId))
     .where(eq(shiftsTable.id, params.data.id))
-    .groupBy(shiftsTable.id, usersTable.name)
+    .groupBy(shiftsTable.id, usersTable.hospitalName)
     .limit(1);
 
   if (!row) {
@@ -171,11 +174,15 @@ router.post("/shifts", requireHospital, async (req: Request, res: Response): Pro
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  if (!hasCompleteCoordinates(parsed.data.latitude, parsed.data.longitude)) {
+    res.status(400).json({ error: "Latitude e longitude devem ser informadas juntas" });
+    return;
+  }
 
-  const [hospital] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  const [hospital] = await db.select().from(usersTable).where(eq(usersTable.id, req.appUserId!)).limit(1);
 
   const [shift] = await db.insert(shiftsTable).values({
-    hospitalId: req.session.userId!,
+    hospitalId: req.appUserId!,
     title: parsed.data.title,
     specialty: parsed.data.specialty,
     description: parsed.data.description ?? null,
@@ -191,7 +198,7 @@ router.post("/shifts", requireHospital, async (req: Request, res: Response): Pro
     longitude: parsed.data.longitude ?? null,
   }).returning();
 
-  res.status(201).json(formatShift(shift, hospital?.name ?? "", 0));
+  res.status(201).json(formatShift(shift, hospital?.hospitalName ?? hospital?.name ?? "", 0));
 });
 
 // PATCH /shifts/:id
@@ -214,8 +221,14 @@ router.patch("/shifts/:id", requireHospital, async (req: Request, res: Response)
     return;
   }
 
-  if (existing.hospitalId !== req.session.userId) {
+  if (existing.hospitalId !== req.appUserId) {
     res.status(403).json({ error: "Acesso negado" });
+    return;
+  }
+  const nextLatitude = parsed.data.latitude ?? existing.latitude;
+  const nextLongitude = parsed.data.longitude ?? existing.longitude;
+  if (!hasCompleteCoordinates(nextLatitude, nextLongitude)) {
+    res.status(400).json({ error: "Latitude e longitude devem ser informadas juntas" });
     return;
   }
 
@@ -244,7 +257,13 @@ router.patch("/shifts/:id", requireHospital, async (req: Request, res: Response)
     .from(applicationsTable)
     .where(eq(applicationsTable.shiftId, updated.id));
 
-  res.json(formatShift(updated, hospital?.name ?? "", applicationsCount ?? 0));
+  res.json(
+    formatShift(
+      updated,
+      hospital?.hospitalName ?? hospital?.name ?? "",
+      applicationsCount ?? 0,
+    ),
+  );
 });
 
 // DELETE /shifts/:id
@@ -261,7 +280,7 @@ router.delete("/shifts/:id", requireHospital, async (req: Request, res: Response
     return;
   }
 
-  if (existing.hospitalId !== req.session.userId) {
+  if (existing.hospitalId !== req.appUserId) {
     res.status(403).json({ error: "Acesso negado" });
     return;
   }
@@ -286,7 +305,7 @@ router.get("/shifts/:id/applications", requireHospital, async (req: Request, res
     return;
   }
 
-  if (shift.hospitalId !== req.session.userId) {
+  if (shift.hospitalId !== req.appUserId) {
     res.status(403).json({ error: "Acesso negado" });
     return;
   }

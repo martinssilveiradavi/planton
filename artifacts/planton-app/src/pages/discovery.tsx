@@ -20,6 +20,7 @@ import {
   ListShiftsParams,
 } from '@workspace/api-client-react';
 import { ShiftCard, ShiftCardSkeleton } from '../components/shift-card';
+import { AiRecommendations } from '../components/ai-recommendations';
 import { List, Map, SlidersHorizontal, X, TrendingUp } from 'lucide-react';
 
 const ShiftMap = lazy(() =>
@@ -253,6 +254,11 @@ export default function Discovery() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* AI recommendations */}
+          <div className="px-3 pt-3">
+            <AiRecommendations />
           </div>
 
           {/* Shift list */}

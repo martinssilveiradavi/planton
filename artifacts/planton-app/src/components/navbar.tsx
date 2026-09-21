@@ -13,8 +13,8 @@ import { cn } from '@workspace/planton-ds/lib/utils';
 import {
   useGetCurrentUser,
   getGetCurrentUserQueryKey,
-  useLogoutUser,
 } from '@workspace/api-client-react';
+import { useAuth } from '@workspace/replit-auth-web';
 import { useQueryClient } from '@tanstack/react-query';
 import { Menu, X, Stethoscope, Building2 } from 'lucide-react';
 
@@ -22,19 +22,13 @@ export function Navbar() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { isAuthenticated, logout } = useAuth();
 
   const { data: user } = useGetCurrentUser({
     query: {
       queryKey: getGetCurrentUserQueryKey(),
       retry: false,
-    },
-  });
-
-  const logout = useLogoutUser({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() });
-      },
+      enabled: isAuthenticated,
     },
   });
 
@@ -142,23 +136,25 @@ export function Navbar() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive"
-                    onClick={() => logout.mutate()}
+                    onClick={() => {
+                      queryClient.clear();
+                      logout();
+                    }}
                     data-testid="logout-button"
                   >
                     Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            ) : isAuthenticated ? (
+              <Link href="/register">
+                <Button size="sm">Concluir cadastro</Button>
+              </Link>
             ) : (
               <div className="hidden md:flex items-center gap-2">
                 <Link href="/login">
                   <Button variant="ghost" size="sm" data-testid="link-login">
                     Entrar
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button size="sm" data-testid="link-register">
-                    Cadastrar
                   </Button>
                 </Link>
               </div>
@@ -199,14 +195,9 @@ export function Navbar() {
             ))}
             {!user && (
               <div className="pt-2 flex gap-2 px-3">
-                <Link href="/login" onClick={() => setMobileOpen(false)} className="flex-1">
+                <Link href={isAuthenticated ? "/register" : "/login"} onClick={() => setMobileOpen(false)} className="flex-1">
                   <Button variant="outline" size="sm" className="w-full">
-                    Entrar
-                  </Button>
-                </Link>
-                <Link href="/register" onClick={() => setMobileOpen(false)} className="flex-1">
-                  <Button size="sm" className="w-full">
-                    Cadastrar
+                    {isAuthenticated ? "Concluir cadastro" : "Entrar"}
                   </Button>
                 </Link>
               </div>

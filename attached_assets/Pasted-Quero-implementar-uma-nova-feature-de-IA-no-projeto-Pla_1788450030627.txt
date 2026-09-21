@@ -1,0 +1,165 @@
+Quero implementar uma nova feature de IA no projeto Planton chamada:
+
+“Encontrar o melhor plantão para mim”
+
+Contexto do produto:
+O Planton é uma plataforma que conecta médicos a plantões disponíveis. Hoje o médico já consegue visualizar vagas, filtrar por especialidade, cidade, data e remuneração, abrir os detalhes e demonstrar interesse.
+
+Objetivo da feature:
+Criar um botão na área do médico chamado “Encontrar o melhor plantão para mim”.
+
+Ao clicar nesse botão, o sistema deve usar IA para analisar:
+- perfil do médico;
+- especialidade;
+- localização;
+- disponibilidade;
+- preferências relevantes;
+- plantões atualmente abertos;
+- especialidade exigida pela vaga;
+- localização/distância;
+- data e horário;
+- remuneração;
+- requisitos da vaga.
+
+A IA deve retornar os 3 plantões mais compatíveis com aquele médico.
+
+IMPORTANTE:
+A IA não deve inventar informações.
+Todos os dados de hospitais, plantões, valores, horários, localização e requisitos devem vir do banco de dados.
+A IA deve apenas comparar, ranquear e explicar por que determinada vaga é adequada para o médico.
+
+Fluxo esperado:
+
+1. Médico entra na plataforma.
+2. Na tela de descoberta de plantões, aparece um botão destacado:
+   “✨ Encontrar o melhor plantão para mim”
+3. Ao clicar, mostrar estado de loading:
+   “Analisando as melhores oportunidades para você...”
+4. Backend busca:
+   - dados do médico logado;
+   - plantões com status ABERTO.
+5. Backend envia somente as informações necessárias para o modelo de IA.
+6. IA retorna um ranking com no máximo 3 recomendações.
+7. Mostrar as recomendações na tela.
+8. Médico consegue clicar na recomendação, abrir os detalhes da vaga e usar o CTA existente “Tenho interesse”.
+
+Formato esperado da resposta da IA:
+
+{
+  "recommendations": [
+    {
+      "shiftId": 12,
+      "score": 92,
+      "reason": "Compatível com sua especialidade, próximo da sua localização e com remuneração acima da sua preferência."
+    },
+    {
+      "shiftId": 7,
+      "score": 84,
+      "reason": "Boa compatibilidade de especialidade e horário, porém um pouco mais distante."
+    }
+  ]
+}
+
+Regras:
+- score deve ser um número de 0 a 100;
+- retornar apenas shiftIds que realmente foram enviados para a IA;
+- nunca criar vagas inexistentes;
+- nunca inventar remuneração, instituição ou requisitos;
+- reason deve ser curta, clara e em português;
+- máximo de 3 recomendações;
+- caso não exista boa compatibilidade, ainda retornar as melhores disponíveis, mas explicar as limitações;
+- se não houver plantões ABERTOS, não chamar a IA e mostrar:
+  “Não encontramos plantões disponíveis no momento.”
+
+Interface desejada:
+
+Criar uma seção ou modal com o título:
+
+“✨ Melhores plantões para você”
+
+Cada card deve mostrar:
+
+- nome da instituição;
+- especialidade;
+- data e horário;
+- remuneração;
+- distância, se disponível;
+- score de compatibilidade;
+- justificativa da IA;
+- botão “Ver detalhes”;
+- botão ou CTA já existente “Tenho interesse”.
+
+Exemplo visual:
+
+✨ Melhor plantão para você
+
+Hospital São Lucas
+Clínica Médica
+
+92% de compatibilidade
+
+✓ 4,2 km de você
+✓ Compatível com sua especialidade
+✓ Dentro da sua disponibilidade
+✓ R$ 1.300
+
+“Esse plantão combina com sua especialidade, está próximo da sua localização e oferece boa remuneração.”
+
+[Ver detalhes] [Tenho interesse]
+
+Backend:
+Criar um endpoint específico para a recomendação, por exemplo:
+
+POST /api/ai/recommend-shifts
+
+Ele deve:
+1. validar que o usuário está autenticado e é médico;
+2. buscar o perfil desse médico;
+3. buscar os plantões ABERTOS;
+4. montar o prompt da IA;
+5. chamar o modelo;
+6. validar o JSON retornado;
+7. cruzar os shiftIds retornados com o banco;
+8. retornar para o frontend os dados reais das vagas junto com score e reason.
+
+Segurança:
+- a chave da API de IA deve ficar exclusivamente nas Secrets / variáveis de ambiente;
+- nunca colocar a chave no frontend;
+- nunca commitar a chave no GitHub;
+- não enviar dados desnecessários ou sensíveis para o modelo;
+- validar a resposta da IA com Zod ou outra validação já utilizada no projeto.
+
+IMPORTANTE PARA A ENTREGA DA FACULDADE:
+Também precisamos calcular:
+- tokens médios usados por chamada;
+- custo aproximado por chamada;
+- custo de 1.000 chamadas;
+- nome do modelo usado;
+- justificativa da escolha desse modelo.
+
+Essas informações devem ficar no README e NÃO aparecer na interface do usuário.
+
+EXTRA PARA NOTA 10:
+Implementar cache da resposta.
+
+A ideia é:
+- gerar uma chave de cache a partir do médico + conjunto atual de plantões relevantes;
+- salvar a recomendação no PostgreSQL;
+- se o mesmo usuário pedir novamente e os dados relevantes não tiverem mudado, retornar a resposta salva;
+- não fazer uma nova chamada para a IA;
+- registrar ou calcular quanto dinheiro esse cache economizou.
+
+Adicionar no README uma linha semelhante a:
+
+“Com o cache de recomendações, X chamadas duplicadas foram evitadas, gerando uma economia estimada de R$ X.”
+
+Antes de implementar:
+1. analise a arquitetura atual do projeto;
+2. reutilize os padrões já existentes;
+3. não quebre os fluxos atuais;
+4. não altere funcionalidades que não tenham relação com essa feature;
+5. me mostre primeiro quais arquivos pretende criar ou alterar;
+6. depois implemente;
+7. ao final, rode typecheck/build e corrija os erros encontrados.
+
+Quero uma implementação simples, funcional e fácil de demonstrar em um vídeo de até 30 segundos.

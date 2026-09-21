@@ -31,7 +31,15 @@ export interface User {
   /** @nullable */
   crmNumber?: string | null;
   /** @nullable */
+  crmState?: string | null;
+  /** @nullable */
   hospitalName?: string | null;
+  /** @nullable */
+  cnpj?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  address?: string | null;
   /** @nullable */
   city?: string | null;
   /** @nullable */
@@ -39,32 +47,85 @@ export interface User {
   createdAt: string;
 }
 
-export type UserInputType = typeof UserInputType[keyof typeof UserInputType];
+export interface AuthUser {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
+}
+
+export interface AuthUserEnvelope {
+  user: AuthUser | null;
+}
+
+export type DoctorProfileInputType = typeof DoctorProfileInputType[keyof typeof DoctorProfileInputType];
 
 
-export const UserInputType = {
+export const DoctorProfileInputType = {
   doctor: 'doctor',
+} as const;
+
+export interface DoctorProfileInput {
+  /** @minLength 2 */
+  name: string;
+  type: DoctorProfileInputType;
+  /** @minLength 1 */
+  specialty: string;
+  /** @minLength 1 */
+  crmNumber: string;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     */
+  crmState: string;
+  /** @minLength 1 */
+  phone: string;
+  /** @minLength 1 */
+  city: string;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     */
+  state: string;
+}
+
+export type HospitalProfileInputType = typeof HospitalProfileInputType[keyof typeof HospitalProfileInputType];
+
+
+export const HospitalProfileInputType = {
   hospital: 'hospital',
 } as const;
 
-export interface UserInput {
+export interface HospitalProfileInput {
   /** @minLength 2 */
   name: string;
-  email: string;
-  /** @minLength 6 */
-  password: string;
-  type: UserInputType;
-  specialty?: string;
-  crmNumber?: string;
-  hospitalName?: string;
-  city?: string;
-  state?: string;
+  type: HospitalProfileInputType;
+  /** @minLength 2 */
+  hospitalName: string;
+  /** @minLength 1 */
+  cnpj: string;
+  /** @minLength 1 */
+  phone: string;
+  /** @minLength 1 */
+  address: string;
+  /** @minLength 1 */
+  city: string;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     */
+  state: string;
 }
 
-export interface LoginInput {
-  email: string;
-  password: string;
-}
+/**
+ * O formato completo depende do tipo de perfil.
+ */
+export type ProfileInput = DoctorProfileInput | HospitalProfileInput;
 
 export type ShiftStatus = typeof ShiftStatus[keyof typeof ShiftStatus];
 
@@ -89,6 +150,7 @@ export interface Shift {
   date: string;
   startTime: string;
   endTime: string;
+  /** @minimum 0 */
   remuneration: number;
   address: string;
   city: string;
@@ -118,7 +180,15 @@ export interface ShiftInput {
   address: string;
   city: string;
   state: string;
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
   latitude?: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
   longitude?: number;
 }
 
@@ -140,11 +210,20 @@ export interface ShiftUpdate {
   date?: string;
   startTime?: string;
   endTime?: string;
+  /** @minimum 0 */
   remuneration?: number;
   address?: string;
   city?: string;
   state?: string;
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
   latitude?: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
   longitude?: number;
   status?: ShiftUpdateStatus;
 }
@@ -166,6 +245,35 @@ export interface ShiftStats {
   totalToday: number;
   bySpecialty: ShiftStatsBySpecialtyItem[];
   recentlyAdded: Shift[];
+}
+
+export interface RecommendationInput {
+  /** @minLength 2 */
+  name: string;
+  /** @minLength 2 */
+  specialty: string;
+  /** @pattern ^\d{8}$ */
+  cep: string;
+}
+
+export interface ShiftRecommendation {
+  shiftId: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  score: number;
+  reason: string;
+  /** @nullable */
+  distanceKm?: number | null;
+  shift: Shift;
+}
+
+export interface RecommendationResponse {
+  /** @maxItems 1 */
+  recommendations: ShiftRecommendation[];
+  cached: boolean;
+  message?: string;
 }
 
 export type ApplicationStatus = typeof ApplicationStatus[keyof typeof ApplicationStatus];
@@ -213,6 +321,14 @@ export interface ApplicationUpdate {
   status?: ApplicationUpdateStatus;
   notes?: string;
 }
+
+export type BeginBrowserLoginParams = {
+returnTo?: string;
+};
+
+export type LogoutBrowserSessionParams = {
+returnTo?: string;
+};
 
 export type ListShiftsParams = {
 specialty?: string;

@@ -1,14 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 
-declare module "express-session" {
-  interface SessionData {
-    userId: number;
-    userType: string;
-  }
-}
-
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
-  if (!req.session.userId) {
+  if (!req.isAuthenticated() || !req.appUserId) {
     res.status(401).json({ error: "Não autenticado" });
     return;
   }
@@ -16,11 +9,11 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 }
 
 export function requireHospital(req: Request, res: Response, next: NextFunction): void {
-  if (!req.session.userId) {
+  if (!req.isAuthenticated() || !req.appUserId) {
     res.status(401).json({ error: "Não autenticado" });
     return;
   }
-  if (req.session.userType !== "hospital") {
+  if (req.appUserType !== "hospital") {
     res.status(403).json({ error: "Acesso restrito a hospitais" });
     return;
   }
@@ -28,11 +21,11 @@ export function requireHospital(req: Request, res: Response, next: NextFunction)
 }
 
 export function requireDoctor(req: Request, res: Response, next: NextFunction): void {
-  if (!req.session.userId) {
+  if (!req.isAuthenticated() || !req.appUserId) {
     res.status(401).json({ error: "Não autenticado" });
     return;
   }
-  if (req.session.userType !== "doctor") {
+  if (req.appUserType !== "doctor") {
     res.status(403).json({ error: "Acesso restrito a médicos" });
     return;
   }

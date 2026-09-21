@@ -6,7 +6,6 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface LoginInput {
-  email: string;
-  password: string;
-}
+export type LogoutBrowserSessionParams = {
+returnTo?: string;
+};

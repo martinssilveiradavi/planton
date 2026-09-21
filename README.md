@@ -20,18 +20,19 @@ O Planton reúne essas duas necessidades em um único fluxo:
 
 ### Para médicos
 
-- Cadastro e login de perfil médico;
+- Login com Google e conclusão do perfil médico;
 - Descoberta de plantões abertos em **lista e mapa**;
 - Filtros por especialidade, cidade, data e faixa de remuneração;
 - Visualização de detalhes: instituição, endereço, data, horário, especialidade, valor, descrição e requisitos;
 - Geolocalização pelo navegador e enquadramento automático dos plantões no mapa;
 - Seleção integrada entre card da lista e marcador do mapa;
 - Candidatura com o CTA **“Tenho interesse”**;
+- Recomendação do plantão ideal por IA a partir de nome, especialidade e CEP;
 - Área para acompanhar as próprias candidaturas.
 
 ### Para hospitais e clínicas
 
-- Cadastro e login de perfil institucional;
+- Login com Google e conclusão do perfil institucional;
 - Publicação de plantões com data, horários, especialidade, remuneração, localização, descrição e requisitos;
 - Consulta dos plantões publicados;
 - Visualização dos candidatos de cada vaga;
@@ -95,6 +96,8 @@ React + Vite (web)
         ▼
 Express API
         │
+        ├── OpenAI (ranking validado)
+        │
         ▼
 PostgreSQL + Drizzle ORM
 ```
@@ -120,7 +123,8 @@ attached_assets/
 - **Frontend:** React 19, Vite, TypeScript, Wouter e TanStack Query;
 - **Interface:** Planton Design System, Tailwind CSS e Radix UI;
 - **Mapa:** React Leaflet, Leaflet e OpenStreetMap;
-- **API:** Node.js, Express 5, `express-session` e `bcryptjs`;
+- **API:** Node.js, Express 5 e OpenID Connect com PKCE;
+- **IA:** OpenAI com `gpt-5-mini`, resposta estruturada e validação Zod;
 - **Banco:** PostgreSQL e Drizzle ORM;
 - **Contratos e validação:** OpenAPI, Orval, Zod e drizzle-zod;
 - **Gerenciador de pacotes:** pnpm workspaces.
@@ -132,7 +136,7 @@ attached_assets/
 - Node.js 24 ou superior;
 - pnpm;
 - PostgreSQL acessível por uma `DATABASE_URL`;
-- uma chave segura para `SESSION_SECRET`.
+- integração gerenciada da OpenAI no Replit ou uma chave própria em `OPENAI_API_KEY`.
 
 ### 1. Instale as dependências
 
@@ -144,15 +148,17 @@ pnpm install
 
 ```bash
 export DATABASE_URL="postgresql://usuario:senha@host:5432/planton"
-export SESSION_SECRET="substitua-por-uma-chave-aleatoria-e-segura"
+export OPENAI_API_KEY="configure-como-secret"
 ```
 
-> Nunca versione valores reais de `DATABASE_URL` ou `SESSION_SECRET`. No Replit, configure esses valores no gerenciamento de Secrets.
+> Nunca versione valores reais de `DATABASE_URL` ou `OPENAI_API_KEY`.
+> No Replit, configure esses valores no gerenciamento de
+> Secrets.
 
 ### 3. Aplique o schema do banco
 
 ```bash
-pnpm --filter @workspace/db run push
+pnpm --filter @workspace/db run migrate:dev
 ```
 
 ### 4. Inicie a API
@@ -194,10 +200,11 @@ O contrato completo está em [`lib/api-spec/openapi.yaml`](lib/api-spec/openapi.
 | Grupo        | Endpoints principais                                                                           | Finalidade                                 |
 | ------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | Saúde        | `GET /api/healthz`                                                                             | Verifica a disponibilidade da API          |
-| Autenticação | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | Cria e gerencia sessões                    |
+| Autenticação | `GET /api/login`, `GET /api/callback`, `GET /api/logout`, `GET /api/auth/user`, `POST /api/auth/profile` | Login Google e perfil profissional |
 | Plantões     | `GET/POST /api/shifts`, `GET/PATCH/DELETE /api/shifts/:id`                                     | Descobre e gerencia vagas                  |
 | Candidatos   | `GET /api/shifts/:id/applications`                                                             | Lista candidatos de um plantão do hospital |
 | Candidaturas | `GET/POST /api/applications`, `PATCH /api/applications/:id`                                    | Cria e atualiza candidaturas               |
+| IA            | `POST /api/ai/recommend-shifts`                                                                | Seleciona o plantão ideal por especialidade e CEP |
 
 ### Regras de acesso
 
@@ -205,7 +212,50 @@ O contrato completo está em [`lib/api-spec/openapi.yaml`](lib/api-spec/openapi.
 - somente o hospital dono da vaga pode visualizar seus candidatos ou atualizar uma candidatura;
 - uma candidatura só pode ser feita para um plantão `ABERTO`;
 - um médico não pode se candidatar duas vezes ao mesmo plantão;
-- sessões usam cookies `HttpOnly` e as senhas são armazenadas com hash via `bcryptjs`.
+- sessões OIDC usam cookies `HttpOnly`, PKCE, state e nonce; o app não armazena senhas.
+
+## Recomendação de plantões por IA
+
+O formulário **“Plantão Ideal com IA”** fica na descoberta e solicita somente
+nome, especialidade médica e CEP. O backend resolve o CEP, calcula a distância
+quando existem coordenadas e compara o perfil informado com os plantões
+`ABERTO`. O nome não é usado no ranking nem enviado ao modelo.
+
+O modelo devolve apenas `shiftId`, score e uma justificativa curta. Antes de
+responder ao navegador, a API:
+
+1. valida o JSON com Zod;
+2. limita a resposta ao único plantão com maior compatibilidade;
+3. rejeita IDs que não estavam no conjunto enviado ao modelo;
+4. busca novamente os dados reais do plantão e da instituição no PostgreSQL.
+
+### Modelo e custo estimado
+
+- **Modelo:** `gpt-5-mini`;
+- **Justificativa:** oferece latência e custo menores que modelos de raciocínio
+  maiores, com capacidade suficiente para comparar uma lista estruturada e
+  produzir justificativas curtas;
+- **Referência de cálculo:** US$ 0,25 por milhão de tokens de entrada e US$ 2,00
+  por milhão de tokens de saída;
+- **Medição do cenário de demonstração:** 1.937 tokens por chamada sem cache
+  (1.818 de entrada + 119 de saída);
+- **Custo aproximado por chamada:** US$ 0,0006925;
+- **Custo aproximado de 1.000 chamadas:** US$ 0,6925, ou cerca de R$ 3,81 usando
+  câmbio didático de R$ 5,50 por US$ 1.
+
+Esses valores são estimativas do cenário atual, medido em 3 de setembro de 2026.
+Eles variam conforme a quantidade de plantões, o tamanho dos requisitos, a
+resposta do modelo, o câmbio e a tabela de preços da OpenAI.
+
+### Cache e economia
+
+Para médicos autenticados, o PostgreSQL armazena a recomendação usando uma chave
+derivada da especialidade, CEP e conjunto atual de plantões. Se nada mudou, a
+API retorna o resultado salvo sem chamar a OpenAI novamente.
+
+> Com o cache de recomendações, 1 chamada duplicada foi evitada no teste de
+> validação, gerando economia estimada de US$ 0,0006925, aproximadamente
+> R$ 0,004 no câmbio didático adotado.
 
 ## Design System
 

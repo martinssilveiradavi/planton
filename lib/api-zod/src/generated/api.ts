@@ -17,34 +17,65 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * @summary Registrar novo usuário
+ * @summary Completar perfil profissional após autenticação
  */
-export const registerUserBodyNameMin = 2;
-
-export const registerUserBodyPasswordMin = 6;
+export const completeProfileBodyOneNameMin = 2;
 
 
 
-export const RegisterUserBody = zod.object({
-  "name": zod.string().min(registerUserBodyNameMin),
-  "email": zod.string(),
-  "password": zod.string().min(registerUserBodyPasswordMin),
-  "type": zod.enum(['doctor', 'hospital']),
-  "specialty": zod.string().optional(),
-  "crmNumber": zod.string().optional(),
-  "hospitalName": zod.string().optional(),
-  "city": zod.string().optional(),
-  "state": zod.string().optional()
-})
+export const completeProfileBodyOneCrmStateMin = 2;
+export const completeProfileBodyOneCrmStateMax = 2;
 
-export const RegisterUserResponse = zod.object({
+
+
+export const completeProfileBodyOneStateMin = 2;
+export const completeProfileBodyOneStateMax = 2;
+
+export const completeProfileBodyTwoNameMin = 2;
+
+export const completeProfileBodyTwoHospitalNameMin = 2;
+
+
+
+
+
+export const completeProfileBodyTwoStateMin = 2;
+export const completeProfileBodyTwoStateMax = 2;
+
+
+
+export const CompleteProfileBody = zod.union([zod.object({
+  "name": zod.string().min(completeProfileBodyOneNameMin),
+  "type": zod.enum(['doctor']),
+  "specialty": zod.string().min(1),
+  "crmNumber": zod.string().min(1),
+  "crmState": zod.string().min(completeProfileBodyOneCrmStateMin).max(completeProfileBodyOneCrmStateMax),
+  "phone": zod.string().min(1),
+  "city": zod.string().min(1),
+  "state": zod.string().min(completeProfileBodyOneStateMin).max(completeProfileBodyOneStateMax)
+}),zod.object({
+  "name": zod.string().min(completeProfileBodyTwoNameMin),
+  "type": zod.enum(['hospital']),
+  "hospitalName": zod.string().min(completeProfileBodyTwoHospitalNameMin),
+  "cnpj": zod.string().min(1),
+  "phone": zod.string().min(1),
+  "address": zod.string().min(1),
+  "city": zod.string().min(1),
+  "state": zod.string().min(completeProfileBodyTwoStateMin).max(completeProfileBodyTwoStateMax)
+})]).describe('O formato completo depende do tipo de perfil.')
+
+export const CompleteProfileResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "email": zod.string(),
   "type": zod.enum(['doctor', 'hospital']),
   "specialty": zod.string().nullish(),
   "crmNumber": zod.string().nullish(),
+  "crmState": zod.string().nullish(),
   "hospitalName": zod.string().nullish(),
+  "cnpj": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "address": zod.string().nullish(),
   "city": zod.string().nullish(),
   "state": zod.string().nullish(),
   "createdAt": zod.string()
@@ -52,31 +83,43 @@ export const RegisterUserResponse = zod.object({
 
 
 /**
- * @summary Entrar na conta
+ * @summary Identidade autenticada atual
  */
-export const LoginUserBody = zod.object({
-  "email": zod.string(),
-  "password": zod.string()
+export const GetCurrentAuthUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable()
+}),zod.null()])
 })
 
-export const LoginUserResponse = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "email": zod.string(),
-  "type": zod.enum(['doctor', 'hospital']),
-  "specialty": zod.string().nullish(),
-  "crmNumber": zod.string().nullish(),
-  "hospitalName": zod.string().nullish(),
-  "city": zod.string().nullish(),
-  "state": zod.string().nullish(),
-  "createdAt": zod.string()
+
+/**
+ * @summary Iniciar login OIDC
+ */
+export const BeginBrowserLoginQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional()
 })
+
+export const BeginBrowserLoginResponse = zod.void()
+
+
+/**
+ * @summary Concluir login OIDC
+ */
+export const HandleBrowserLoginCallbackResponse = zod.void()
 
 
 /**
  * @summary Encerrar sessão
  */
-export const LogoutUserResponse = zod.void()
+export const LogoutBrowserSessionQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional()
+})
+
+export const LogoutBrowserSessionResponse = zod.void()
 
 
 /**
@@ -89,10 +132,73 @@ export const GetCurrentUserResponse = zod.object({
   "type": zod.enum(['doctor', 'hospital']),
   "specialty": zod.string().nullish(),
   "crmNumber": zod.string().nullish(),
+  "crmState": zod.string().nullish(),
   "hospitalName": zod.string().nullish(),
+  "cnpj": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "address": zod.string().nullish(),
   "city": zod.string().nullish(),
   "state": zod.string().nullish(),
   "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Recomendar o plantão ideal a partir de especialidade e CEP
+ */
+export const recommendShiftsBodyNameMin = 2;
+
+export const recommendShiftsBodySpecialtyMin = 2;
+
+export const recommendShiftsBodyCepRegExp = new RegExp('^\\d{8}$');
+
+
+export const RecommendShiftsBody = zod.object({
+  "name": zod.string().min(recommendShiftsBodyNameMin),
+  "specialty": zod.string().min(recommendShiftsBodySpecialtyMin),
+  "cep": zod.string().regex(recommendShiftsBodyCepRegExp)
+})
+
+export const recommendShiftsResponseRecommendationsItemScoreMin = 0;
+export const recommendShiftsResponseRecommendationsItemScoreMax = 100;
+
+export const recommendShiftsResponseRecommendationsItemShiftRemunerationMin = 0;
+
+export const recommendShiftsResponseRecommendationsMax = 1;
+
+
+
+export const RecommendShiftsResponse = zod.object({
+  "recommendations": zod.array(zod.object({
+  "shiftId": zod.number(),
+  "score": zod.number().min(recommendShiftsResponseRecommendationsItemScoreMin).max(recommendShiftsResponseRecommendationsItemScoreMax),
+  "reason": zod.string(),
+  "distanceKm": zod.number().nullish(),
+  "shift": zod.object({
+  "id": zod.number(),
+  "hospitalId": zod.number(),
+  "hospitalName": zod.string(),
+  "title": zod.string(),
+  "specialty": zod.string(),
+  "description": zod.string().nullish(),
+  "requirements": zod.string().nullish(),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "endTime": zod.string(),
+  "remuneration": zod.number().min(recommendShiftsResponseRecommendationsItemShiftRemunerationMin),
+  "address": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "latitude": zod.number().nullish(),
+  "longitude": zod.number().nullish(),
+  "status": zod.enum(['ABERTO', 'PREENCHIDO', 'CANCELADO', 'ENCERRADO']),
+  "applicationsCount": zod.number().optional(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+})).max(recommendShiftsResponseRecommendationsMax),
+  "cached": zod.boolean(),
+  "message": zod.string().optional()
 })
 
 
@@ -116,6 +222,10 @@ export const ListShiftsQueryParams = zod.object({
   "limit": zod.coerce.number().default(listShiftsQueryLimitDefault)
 })
 
+export const listShiftsResponseShiftsItemRemunerationMin = 0;
+
+
+
 export const ListShiftsResponse = zod.object({
   "shifts": zod.array(zod.object({
   "id": zod.number(),
@@ -128,7 +238,7 @@ export const ListShiftsResponse = zod.object({
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string(),
-  "remuneration": zod.number(),
+  "remuneration": zod.number().min(listShiftsResponseShiftsItemRemunerationMin),
   "address": zod.string(),
   "city": zod.string(),
   "state": zod.string(),
@@ -154,6 +264,12 @@ export const createShiftBodySpecialtyMin = 2;
 
 export const createShiftBodyRemunerationMin = 0;
 
+export const createShiftBodyLatitudeMin = -90;
+export const createShiftBodyLatitudeMax = 90;
+
+export const createShiftBodyLongitudeMin = -180;
+export const createShiftBodyLongitudeMax = 180;
+
 
 
 export const CreateShiftBody = zod.object({
@@ -168,9 +284,13 @@ export const CreateShiftBody = zod.object({
   "address": zod.string(),
   "city": zod.string(),
   "state": zod.string(),
-  "latitude": zod.number().optional(),
-  "longitude": zod.number().optional()
+  "latitude": zod.number().min(createShiftBodyLatitudeMin).max(createShiftBodyLatitudeMax).optional(),
+  "longitude": zod.number().min(createShiftBodyLongitudeMin).max(createShiftBodyLongitudeMax).optional()
 })
+
+export const createShiftResponseRemunerationMin = 0;
+
+
 
 export const CreateShiftResponse = zod.object({
   "id": zod.number(),
@@ -183,7 +303,7 @@ export const CreateShiftResponse = zod.object({
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string(),
-  "remuneration": zod.number(),
+  "remuneration": zod.number().min(createShiftResponseRemunerationMin),
   "address": zod.string(),
   "city": zod.string(),
   "state": zod.string(),
@@ -199,6 +319,10 @@ export const CreateShiftResponse = zod.object({
 /**
  * @summary Estatísticas de plantões disponíveis (dashboard)
  */
+export const getShiftStatsResponseRecentlyAddedItemRemunerationMin = 0;
+
+
+
 export const GetShiftStatsResponse = zod.object({
   "totalOpen": zod.number(),
   "totalToday": zod.number(),
@@ -217,7 +341,7 @@ export const GetShiftStatsResponse = zod.object({
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string(),
-  "remuneration": zod.number(),
+  "remuneration": zod.number().min(getShiftStatsResponseRecentlyAddedItemRemunerationMin),
   "address": zod.string(),
   "city": zod.string(),
   "state": zod.string(),
@@ -238,6 +362,10 @@ export const GetShiftParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const getShiftResponseRemunerationMin = 0;
+
+
+
 export const GetShiftResponse = zod.object({
   "id": zod.number(),
   "hospitalId": zod.number(),
@@ -249,7 +377,7 @@ export const GetShiftResponse = zod.object({
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string(),
-  "remuneration": zod.number(),
+  "remuneration": zod.number().min(getShiftResponseRemunerationMin),
   "address": zod.string(),
   "city": zod.string(),
   "state": zod.string(),
@@ -269,6 +397,16 @@ export const UpdateShiftParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const updateShiftBodyRemunerationMin = 0;
+
+export const updateShiftBodyLatitudeMin = -90;
+export const updateShiftBodyLatitudeMax = 90;
+
+export const updateShiftBodyLongitudeMin = -180;
+export const updateShiftBodyLongitudeMax = 180;
+
+
+
 export const UpdateShiftBody = zod.object({
   "title": zod.string().optional(),
   "specialty": zod.string().optional(),
@@ -277,14 +415,18 @@ export const UpdateShiftBody = zod.object({
   "date": zod.string().optional(),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
-  "remuneration": zod.number().optional(),
+  "remuneration": zod.number().min(updateShiftBodyRemunerationMin).optional(),
   "address": zod.string().optional(),
   "city": zod.string().optional(),
   "state": zod.string().optional(),
-  "latitude": zod.number().optional(),
-  "longitude": zod.number().optional(),
+  "latitude": zod.number().min(updateShiftBodyLatitudeMin).max(updateShiftBodyLatitudeMax).optional(),
+  "longitude": zod.number().min(updateShiftBodyLongitudeMin).max(updateShiftBodyLongitudeMax).optional(),
   "status": zod.enum(['ABERTO', 'PREENCHIDO', 'CANCELADO', 'ENCERRADO']).optional()
 })
+
+export const updateShiftResponseRemunerationMin = 0;
+
+
 
 export const UpdateShiftResponse = zod.object({
   "id": zod.number(),
@@ -297,7 +439,7 @@ export const UpdateShiftResponse = zod.object({
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string(),
-  "remuneration": zod.number(),
+  "remuneration": zod.number().min(updateShiftResponseRemunerationMin),
   "address": zod.string(),
   "city": zod.string(),
   "state": zod.string(),
@@ -327,6 +469,10 @@ export const ListShiftApplicationsParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const listShiftApplicationsResponseShiftRemunerationMin = 0;
+
+
+
 export const ListShiftApplicationsResponseItem = zod.object({
   "id": zod.number(),
   "shiftId": zod.number(),
@@ -345,7 +491,7 @@ export const ListShiftApplicationsResponseItem = zod.object({
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string(),
-  "remuneration": zod.number(),
+  "remuneration": zod.number().min(listShiftApplicationsResponseShiftRemunerationMin),
   "address": zod.string(),
   "city": zod.string(),
   "state": zod.string(),
@@ -367,6 +513,10 @@ export const ListShiftApplicationsResponse = zod.array(ListShiftApplicationsResp
 /**
  * @summary Candidaturas do usuário logado
  */
+export const listApplicationsResponseShiftRemunerationMin = 0;
+
+
+
 export const ListApplicationsResponseItem = zod.object({
   "id": zod.number(),
   "shiftId": zod.number(),
@@ -385,7 +535,7 @@ export const ListApplicationsResponseItem = zod.object({
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string(),
-  "remuneration": zod.number(),
+  "remuneration": zod.number().min(listApplicationsResponseShiftRemunerationMin),
   "address": zod.string(),
   "city": zod.string(),
   "state": zod.string(),
@@ -412,6 +562,10 @@ export const CreateApplicationBody = zod.object({
   "notes": zod.string().optional()
 })
 
+export const createApplicationResponseShiftRemunerationMin = 0;
+
+
+
 export const CreateApplicationResponse = zod.object({
   "id": zod.number(),
   "shiftId": zod.number(),
@@ -430,7 +584,7 @@ export const CreateApplicationResponse = zod.object({
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string(),
-  "remuneration": zod.number(),
+  "remuneration": zod.number().min(createApplicationResponseShiftRemunerationMin),
   "address": zod.string(),
   "city": zod.string(),
   "state": zod.string(),
@@ -460,6 +614,10 @@ export const UpdateApplicationBody = zod.object({
   "notes": zod.string().optional()
 })
 
+export const updateApplicationResponseShiftRemunerationMin = 0;
+
+
+
 export const UpdateApplicationResponse = zod.object({
   "id": zod.number(),
   "shiftId": zod.number(),
@@ -478,7 +636,7 @@ export const UpdateApplicationResponse = zod.object({
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string(),
-  "remuneration": zod.number(),
+  "remuneration": zod.number().min(updateApplicationResponseShiftRemunerationMin),
   "address": zod.string(),
   "city": zod.string(),
   "state": zod.string(),

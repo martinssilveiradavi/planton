@@ -17,7 +17,15 @@ export interface User {
   /** @nullable */
   crmNumber?: string | null;
   /** @nullable */
+  crmState?: string | null;
+  /** @nullable */
   hospitalName?: string | null;
+  /** @nullable */
+  cnpj?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  address?: string | null;
   /** @nullable */
   city?: string | null;
   /** @nullable */

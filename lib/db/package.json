@@ -9,7 +9,11 @@
   },
   "scripts": {
     "push": "drizzle-kit push --config ./drizzle.config.ts",
-    "push-force": "drizzle-kit push --force --config ./drizzle.config.ts"
+    "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
+    "migrate:dev": "node ./scripts/migrate-dev.mjs",
+    "seed": "pnpm run migrate:dev && node ./scripts/seed.mjs",
+    "validate:data": "node ./scripts/validate.mjs",
+    "validate:constraints": "node ./scripts/validate-constraints.mjs"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",

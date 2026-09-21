@@ -1,2 +1,7 @@
 - [Orval + Zod v3 compatibility](orval-zod-compat.md) — never use `type: integer` or `format: email` in OpenAPI spec when Orval v8 + Zod v3 are in use.
 - [Planton design system tokens](planton-ds-tokens.md) — primary #155EEF, accent #0E9384, Inter font; tokens.json is the only source of truth.
+- [Linear GraphQL team filters](linear-graphql-team-filters.md) — `team(id:)` and issue team filters use incompatible variable types; use literals or separate variables.
+- [Drizzle CHECK updates](drizzle-check-updates.md) — `drizzle-kit push` may miss a changed CHECK expression when its constraint name is unchanged.
+- [Drizzle wrapped database errors](drizzle-wrapped-errors.md) — PostgreSQL codes and constraints may live in nested `cause` objects rather than on the thrown error.
+- [GPT-5 mini empty JSON responses](gpt5-mini-empty-json.md) — small output budgets may be consumed by reasoning; request minimal reasoning and leave enough completion headroom.
+- [Legacy OIDC account linking](legacy-oidc-linking.md) — link an existing password-era account by email only when the provider affirmatively verifies that email.

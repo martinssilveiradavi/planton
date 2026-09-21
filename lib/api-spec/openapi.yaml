@@ -16,6 +16,8 @@ tags:
     description: Plantões médicos
   - name: applications
     description: Candidaturas de médicos
+  - name: ai
+    description: Recomendações inteligentes de plantões
 paths:
   /healthz:
     get:
@@ -31,64 +33,94 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 
   # ── Auth ──────────────────────────────────────────────────────────────────
-  /auth/register:
+  /auth/profile:
     post:
-      operationId: registerUser
+      operationId: completeProfile
       tags: [auth]
-      summary: Registrar novo usuário
+      summary: Completar perfil profissional após autenticação
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserInput"
+              $ref: "#/components/schemas/ProfileInput"
       responses:
         "201":
-          description: Usuário criado
+          description: Perfil profissional criado
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
         "400":
-          description: Dados inválidos ou e-mail já existe
+          description: Dados profissionais inválidos ou já cadastrados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Identidade Google não autenticada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Perfil profissional já concluído
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /auth/login:
-    post:
-      operationId: loginUser
+  /auth/user:
+    get:
+      operationId: getCurrentAuthUser
       tags: [auth]
-      summary: Entrar na conta
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LoginInput"
+      summary: Identidade autenticada atual
       responses:
         "200":
-          description: Login bem-sucedido
+          description: Estado de autenticação resolvido
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
-        "401":
-          description: Credenciais inválidas
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/AuthUserEnvelope"
 
-  /auth/logout:
-    post:
-      operationId: logoutUser
+  /login:
+    get:
+      operationId: beginBrowserLogin
+      tags: [auth]
+      summary: Iniciar login OIDC
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirecionamento para o provedor de identidade
+
+  /callback:
+    get:
+      operationId: handleBrowserLoginCallback
+      tags: [auth]
+      summary: Concluir login OIDC
+      responses:
+        "302":
+          description: Redirecionamento após autenticação
+
+  /logout:
+    get:
+      operationId: logoutBrowserSession
       tags: [auth]
       summary: Encerrar sessão
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
-        "204":
-          description: Sessão encerrada
+        "302":
+          description: Redirecionamento após logout
 
   /auth/me:
     get:
@@ -104,6 +136,38 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── AI recommendations ────────────────────────────────────────────────────
+  /ai/recommend-shifts:
+    post:
+      operationId: recommendShifts
+      tags: [ai]
+      summary: Recomendar o plantão ideal a partir de especialidade e CEP
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendationInput"
+      responses:
+        "200":
+          description: Até três recomendações com dados reais dos plantões
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationResponse"
+        "400":
+          description: Nome, especialidade ou CEP inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Serviço de recomendação indisponível
           content:
             application/json:
               schema:
@@ -421,7 +485,15 @@ components:
           type: ["string", "null"]
         crmNumber:
           type: ["string", "null"]
+        crmState:
+          type: ["string", "null"]
         hospitalName:
+          type: ["string", "null"]
+        cnpj:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        address:
           type: ["string", "null"]
         city:
           type: ["string", "null"]
@@ -430,40 +502,97 @@ components:
         createdAt:
           type: string
 
-    UserInput:
+    AuthUser:
       type: object
-      required: [name, email, password, type]
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id:
+          type: string
+        email:
+          type: ["string", "null"]
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        profileImageUrl:
+          type: ["string", "null"]
+
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+
+    ProfileInput:
+      type: object
+      description: O formato completo depende do tipo de perfil.
+      oneOf:
+        - $ref: "#/components/schemas/DoctorProfileInput"
+        - $ref: "#/components/schemas/HospitalProfileInput"
+
+    DoctorProfileInput:
+      type: object
+      required: [name, type, specialty, crmNumber, crmState, phone, city, state]
       properties:
         name:
           type: string
           minLength: 2
-        email:
-          type: string
-        password:
-          type: string
-          minLength: 6
         type:
           type: string
-          enum: [doctor, hospital]
+          enum: [doctor]
         specialty:
           type: string
+          minLength: 1
         crmNumber:
           type: string
-        hospitalName:
+          minLength: 1
+        crmState:
           type: string
+          minLength: 2
+          maxLength: 2
+        phone:
+          type: string
+          minLength: 1
         city:
           type: string
+          minLength: 1
         state:
           type: string
+          minLength: 2
+          maxLength: 2
 
-    LoginInput:
+    HospitalProfileInput:
       type: object
-      required: [email, password]
+      required: [name, type, hospitalName, cnpj, phone, address, city, state]
       properties:
-        email:
+        name:
           type: string
-        password:
+          minLength: 2
+        type:
           type: string
+          enum: [hospital]
+        hospitalName:
+          type: string
+          minLength: 2
+        cnpj:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+        address:
+          type: string
+          minLength: 1
+        city:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          minLength: 2
+          maxLength: 2
 
     # ── Shift ──────────────────────────────────────────────────────────────
     Shift:
@@ -492,6 +621,7 @@ components:
           type: string
         remuneration:
           type: number
+          minimum: 0
         address:
           type: string
         city:
@@ -543,8 +673,12 @@ components:
           type: string
         latitude:
           type: number
+          minimum: -90
+          maximum: 90
         longitude:
           type: number
+          minimum: -180
+          maximum: 180
 
     ShiftUpdate:
       type: object
@@ -565,6 +699,7 @@ components:
           type: string
         remuneration:
           type: number
+          minimum: 0
         address:
           type: string
         city:
@@ -573,8 +708,12 @@ components:
           type: string
         latitude:
           type: number
+          minimum: -90
+          maximum: 90
         longitude:
           type: number
+          minimum: -180
+          maximum: 180
         status:
           type: string
           enum: [ABERTO, PREENCHIDO, CANCELADO, ENCERRADO]
@@ -616,6 +755,52 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Shift"
+
+    # ── AI recommendations ─────────────────────────────────────────────────
+    RecommendationInput:
+      type: object
+      required: [name, specialty, cep]
+      properties:
+        name:
+          type: string
+          minLength: 2
+        specialty:
+          type: string
+          minLength: 2
+        cep:
+          type: string
+          pattern: '^\d{8}$'
+
+    ShiftRecommendation:
+      type: object
+      required: [shiftId, score, reason, shift]
+      properties:
+        shiftId:
+          type: number
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+        reason:
+          type: string
+        distanceKm:
+          type: ["number", "null"]
+        shift:
+          $ref: "#/components/schemas/Shift"
+
+    RecommendationResponse:
+      type: object
+      required: [recommendations, cached]
+      properties:
+        recommendations:
+          type: array
+          maxItems: 1
+          items:
+            $ref: "#/components/schemas/ShiftRecommendation"
+        cached:
+          type: boolean
+        message:
+          type: string
 
     # ── Application ────────────────────────────────────────────────────────
     Application:

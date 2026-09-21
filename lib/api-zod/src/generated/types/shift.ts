@@ -20,6 +20,7 @@ export interface Shift {
   date: string;
   startTime: string;
   endTime: string;
+  /** @minimum 0 */
   remuneration: number;
   address: string;
   city: string;

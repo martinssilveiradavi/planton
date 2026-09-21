@@ -6,9 +6,20 @@ import {
   UpdateApplicationBody,
   UpdateApplicationParams,
 } from "@workspace/api-zod";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireDoctor } from "../middlewares/auth";
 
 const router: IRouter = Router();
+
+function isDuplicateApplication(error: unknown): error is { code: string; constraint?: string } {
+  return (
+    typeof error === "object"
+    && error !== null
+    && "code" in error
+    && error.code === "23505"
+    && "constraint" in error
+    && error.constraint === "applications_shift_doctor_unique_idx"
+  );
+}
 
 function formatShiftForApp(shift: typeof shiftsTable.$inferSelect, hospitalName: string) {
   return {
@@ -46,7 +57,7 @@ router.get("/applications", requireAuth, async (req: Request, res: Response): Pr
     .from(applicationsTable)
     .leftJoin(shiftsTable, eq(applicationsTable.shiftId, shiftsTable.id))
     .leftJoin(usersTable, eq(shiftsTable.hospitalId, usersTable.id))
-    .where(eq(applicationsTable.doctorId, req.session.userId!))
+    .where(eq(applicationsTable.doctorId, req.appUserId!))
     .orderBy(desc(applicationsTable.createdAt));
 
   const applications = rows.map(({ application, shift, hospital }) => ({
@@ -55,7 +66,9 @@ router.get("/applications", requireAuth, async (req: Request, res: Response): Pr
     doctorId: application.doctorId,
     status: application.status,
     notes: application.notes,
-    shift: shift ? formatShiftForApp(shift, hospital?.name ?? "") : undefined,
+    shift: shift
+      ? formatShiftForApp(shift, hospital?.hospitalName ?? hospital?.name ?? "")
+      : undefined,
     createdAt: application.createdAt.toISOString(),
     updatedAt: application.updatedAt.toISOString(),
   }));
@@ -64,7 +77,7 @@ router.get("/applications", requireAuth, async (req: Request, res: Response): Pr
 });
 
 // POST /applications - doctor applies to a shift
-router.post("/applications", requireAuth, async (req: Request, res: Response): Promise<void> => {
+router.post("/applications", requireDoctor, async (req: Request, res: Response): Promise<void> => {
   const parsed = CreateApplicationBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -88,7 +101,7 @@ router.post("/applications", requireAuth, async (req: Request, res: Response): P
   const existing = await db
     .select()
     .from(applicationsTable)
-    .where(and(eq(applicationsTable.shiftId, shiftId), eq(applicationsTable.doctorId, req.session.userId!)))
+    .where(and(eq(applicationsTable.shiftId, shiftId), eq(applicationsTable.doctorId, req.appUserId!)))
     .limit(1);
 
   if (existing.length > 0) {
@@ -96,13 +109,22 @@ router.post("/applications", requireAuth, async (req: Request, res: Response): P
     return;
   }
 
-  const [doctor] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  const [doctor] = await db.select().from(usersTable).where(eq(usersTable.id, req.appUserId!)).limit(1);
 
-  const [application] = await db.insert(applicationsTable).values({
-    shiftId,
-    doctorId: req.session.userId!,
-    notes: notes ?? null,
-  }).returning();
+  let application: typeof applicationsTable.$inferSelect;
+  try {
+    [application] = await db.insert(applicationsTable).values({
+      shiftId,
+      doctorId: req.appUserId!,
+      notes: notes ?? null,
+    }).returning();
+  } catch (error) {
+    if (isDuplicateApplication(error)) {
+      res.status(400).json({ error: "Você já se candidatou a este plantão" });
+      return;
+    }
+    throw error;
+  }
 
   res.status(201).json({
     id: application.id,
@@ -148,7 +170,7 @@ router.patch("/applications/:id", requireAuth, async (req: Request, res: Respons
   }
 
   // Hospital owning the shift can update the application
-  if (row.shift && row.shift.hospitalId !== req.session.userId) {
+  if (row.shift && row.shift.hospitalId !== req.appUserId) {
     res.status(403).json({ error: "Acesso negado" });
     return;
   }

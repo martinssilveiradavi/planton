@@ -6,10 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type UserInputType = typeof UserInputType[keyof typeof UserInputType];
+export type DoctorProfileInputType = typeof DoctorProfileInputType[keyof typeof DoctorProfileInputType];
 
 
-export const UserInputType = {
+export const DoctorProfileInputType = {
   doctor: 'doctor',
-  hospital: 'hospital',
 } as const;

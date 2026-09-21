@@ -1,0 +1,735 @@
+# Prompt para o Replit — Criação e População do Banco de Dados
+
+Quero que você crie, configure e popule o banco de dados da aplicação de **plantões médicos**, respeitando rigorosamente o modelo conceitual definido.
+
+> **IMPORTANTE:** não simplifique o modelo, não remova entidades e não transforme as informações em uma única tabela. Respeite as entidades, atributos, chaves primárias, chaves estrangeiras, cardinalidades e relacionamentos descritos abaixo.
+
+Utilize um **banco de dados relacional, preferencialmente PostgreSQL**.
+
+---
+
+# 1. Contexto da aplicação
+
+A aplicação conecta **Hospitais/Clínicas** que possuem plantões disponíveis com **Médicos** interessados nesses plantões.
+
+O fluxo principal é:
+
+1. Um Hospital/Clínica é cadastrado.
+2. O Hospital/Clínica publica um ou vários Plantões.
+3. Médicos são cadastrados na plataforma.
+4. Um Médico pode se candidatar a diferentes Plantões.
+5. Cada candidatura deve ser registrada na entidade `candidatura`.
+6. Um Plantão pode receber várias candidaturas.
+7. Cada candidatura pertence obrigatoriamente a:
+   - exatamente 1 Plantão;
+   - exatamente 1 Médico.
+
+---
+
+# 2. Entidades do banco de dados
+
+## 2.1. Tabela `hospital`
+
+Representa os hospitais ou clínicas responsáveis pela publicação dos plantões.
+
+### Campos
+
+| Campo | Tipo | Regra |
+|---|---|---|
+| `idhospital` | integer | PRIMARY KEY, auto increment |
+| `hospitalnome` | varchar/text | NOT NULL |
+| `cnpjhospital` | varchar | NOT NULL, UNIQUE |
+| `cidadehospital` | varchar/text | NOT NULL |
+
+### Relacionamento
+
+- Um Hospital/Clínica pode publicar **0 a N Plantões**.
+- Cada Plantão pertence obrigatoriamente a **1 Hospital/Clínica**.
+
+---
+
+## 2.2. Tabela `plantao`
+
+Representa os plantões médicos publicados.
+
+### Campos
+
+| Campo | Tipo | Regra |
+|---|---|---|
+| `idplantao` | integer | PRIMARY KEY, auto increment |
+| `localizacaoplantao` | varchar/text | NOT NULL |
+| `dataplantao` | date/timestamp | NOT NULL |
+| `valorplantao` | numeric(10,2) | NOT NULL, valor >= 0 |
+| `especialidadeplantao` | varchar/text | NOT NULL |
+| `statusplantao` | varchar/text | NOT NULL |
+| `idhospital` | integer | NOT NULL, FOREIGN KEY |
+
+### Foreign Key
+
+`idhospital` deve referenciar:
+
+`hospital(idhospital)`
+
+### Relacionamentos
+
+- Um Hospital possui **0:N Plantões**.
+- Cada Plantão possui **1:1 Hospital**.
+- Um Plantão pode receber **0:N Candidaturas**.
+
+---
+
+## 2.3. Tabela `medico`
+
+Representa os médicos cadastrados na plataforma.
+
+### Campos
+
+| Campo | Tipo | Regra |
+|---|---|---|
+| `idmedico` | integer | PRIMARY KEY, auto increment |
+| `nome` | varchar/text | NOT NULL |
+| `especialidade` | varchar/text | NOT NULL |
+| `crm` | varchar | NOT NULL, UNIQUE |
+| `cidade` | varchar/text | NOT NULL |
+
+### Relacionamento
+
+- Um Médico pode realizar **0:N Candidaturas**.
+- Cada Candidatura pertence obrigatoriamente a **1 Médico**.
+
+---
+
+## 2.4. Tabela `candidatura`
+
+Representa a candidatura realizada por um médico para determinado plantão.
+
+### Campos
+
+| Campo | Tipo | Regra |
+|---|---|---|
+| `idcandidatura` | integer | PRIMARY KEY, auto increment |
+| `data_candidatura` | timestamp/date | NOT NULL |
+| `status` | varchar/text | NOT NULL |
+| `idplantao` | integer | NOT NULL, FOREIGN KEY |
+| `idmedico` | integer | NOT NULL, FOREIGN KEY |
+
+### Foreign Keys
+
+`idplantao` deve referenciar:
+
+`plantao(idplantao)`
+
+`idmedico` deve referenciar:
+
+`medico(idmedico)`
+
+### Relacionamentos
+
+- Um Plantão pode possuir **0:N Candidaturas**.
+- Cada Candidatura pertence a **1:1 Plantão**.
+- Um Médico pode realizar **0:N Candidaturas**.
+- Cada Candidatura é realizada por **1:1 Médico**.
+
+Adicione também:
+
+`UNIQUE(idplantao, idmedico)`
+
+Isso deve impedir que o mesmo médico se candidate duas vezes ao mesmo plantão.
+
+---
+
+# 3. Cardinalidades obrigatórias
+
+Respeite exatamente estas cardinalidades:
+
+## Hospital → Plantão
+
+- Hospital: `(0, N)`
+- Plantão: `(1, 1)`
+
+Representação:
+
+`hospital 1:N plantao`
+
+---
+
+## Plantão → Candidatura
+
+- Plantão: `(0, N)`
+- Candidatura: `(1, 1)`
+
+Representação:
+
+`plantao 1:N candidatura`
+
+---
+
+## Médico → Candidatura
+
+- Médico: `(0, N)`
+- Candidatura: `(1, 1)`
+
+Representação:
+
+`medico 1:N candidatura`
+
+---
+
+# 4. Integridade referencial
+
+Configure corretamente todas as Foreign Keys.
+
+Preferencialmente:
+
+### Plantão → Hospital
+
+`plantao.idhospital`
+
+REFERENCES `hospital(idhospital)`
+
+`ON DELETE RESTRICT`
+
+### Candidatura → Plantão
+
+`candidatura.idplantao`
+
+REFERENCES `plantao(idplantao)`
+
+`ON DELETE CASCADE`
+
+### Candidatura → Médico
+
+`candidatura.idmedico`
+
+REFERENCES `medico(idmedico)`
+
+`ON DELETE CASCADE`
+
+Não permita registros órfãos.
+
+---
+
+# 5. Status
+
+## Status de Plantão
+
+Utilize somente:
+
+- `aberto`
+- `preenchido`
+- `cancelado`
+- `finalizado`
+
+## Status de Candidatura
+
+Utilize somente:
+
+- `pendente`
+- `aprovada`
+- `rejeitada`
+- `cancelada`
+
+Se estiver utilizando PostgreSQL, implemente `CHECK CONSTRAINTS` para evitar valores inválidos.
+
+---
+
+# 6. Índices
+
+Crie índices para melhorar as consultas:
+
+- `plantao(idhospital)`
+- `plantao(dataplantao)`
+- `plantao(especialidadeplantao)`
+- `plantao(statusplantao)`
+- `candidatura(idplantao)`
+- `candidatura(idmedico)`
+- `candidatura(status)`
+- `medico(especialidade)`
+- `medico(cidade)`
+
+---
+
+# 7. População do banco
+
+Depois da criação das tabelas, **popule automaticamente o banco com dados fictícios e realistas**.
+
+Quero no mínimo:
+
+| Tabela | Quantidade mínima |
+|---|---:|
+| `hospital` | 10 registros |
+| `medico` | 10 registros |
+| `plantao` | 15 registros |
+| `candidatura` | 20 registros |
+
+Pode adicionar mais registros caso seja necessário para demonstrar melhor os relacionamentos.
+
+Todos os dados devem respeitar as Foreign Keys.
+
+---
+
+# 8. Hospitais fictícios
+
+Crie pelo menos **10 Hospitais/Clínicas fictícios**.
+
+Exemplos:
+
+1. Hospital Vida Paulista
+2. Hospital Nova Esperança
+3. Clínica Saúde Jardins
+4. Hospital Santa Helena
+5. Centro Médico Paulista
+6. Hospital São Lucas
+7. Clínica Médica Pinheiros
+8. Hospital Vila Mariana
+9. Instituto Médico Moema
+10. Hospital Saúde Campinas
+
+Distribua-os entre cidades como:
+
+- São Paulo
+- Campinas
+- Ribeirão Preto
+- Santos
+- Sorocaba
+
+Crie **CNPJs totalmente fictícios**.
+
+Não utilize CNPJ verdadeiro de empresas reais.
+
+---
+
+# 9. Médicos fictícios
+
+Crie pelo menos **10 Médicos fictícios**.
+
+Exemplos:
+
+1. Ana Martins — Cardiologia
+2. Bruno Almeida — Ortopedia
+3. Carolina Mendes — Pediatria
+4. Daniel Ferreira — Clínica Médica
+5. Eduarda Ribeiro — Dermatologia
+6. Felipe Costa — Cardiologia
+7. Gabriela Santos — Pediatria
+8. Henrique Lima — Anestesiologia
+9. Isabela Rocha — Clínica Médica
+10. João Carvalho — Ortopedia
+
+Utilize **CRMs fictícios**.
+
+Não utilize dados pessoais reais.
+
+---
+
+# 10. Plantões fictícios
+
+Crie pelo menos **15 Plantões**.
+
+Distribua os plantões entre diferentes hospitais.
+
+Utilize especialidades variadas:
+
+- Cardiologia
+- Ortopedia
+- Pediatria
+- Clínica Médica
+- Dermatologia
+- Anestesiologia
+- Cirurgia Geral
+- Ginecologia
+- Emergência
+
+Utilize diferentes:
+
+- datas;
+- valores;
+- localizações;
+- especialidades;
+- status.
+
+Os valores podem variar aproximadamente entre:
+
+`R$ 800,00` e `R$ 2.500,00`
+
+Exemplo:
+
+- Hospital: Hospital Vida Paulista
+- Localização: São Paulo - SP
+- Data: 05/09/2026
+- Valor: R$ 1.200,00
+- Especialidade: Cardiologia
+- Status: aberto
+
+---
+
+# 11. Candidaturas fictícias
+
+Crie pelo menos **20 Candidaturas**.
+
+Distribua as candidaturas entre diferentes Médicos e Plantões.
+
+Não crie apenas uma candidatura para cada plantão.
+
+Quero que existam exemplos de:
+
+- Plantão com 0 candidaturas;
+- Plantão com 1 candidatura;
+- Plantão com 2 candidaturas;
+- Plantão com 3 ou mais candidaturas;
+- Médico com 0 candidaturas;
+- Médico com várias candidaturas.
+
+Isso é importante para demonstrar corretamente os relacionamentos `1:N`.
+
+Exemplo:
+
+- Médico 1 → Plantão 1 → `pendente`
+- Médico 6 → Plantão 1 → `aprovada`
+- Médico 2 → Plantão 2 → `pendente`
+- Médico 3 → Plantão 3 → `rejeitada`
+
+---
+
+# 12. Compatibilidade das especialidades
+
+Na população inicial do banco, faça com que a **maior parte das candidaturas seja compatível com a especialidade do plantão**.
+
+Exemplos:
+
+- Cardiologista → Plantão de Cardiologia
+- Pediatra → Plantão de Pediatria
+- Ortopedista → Plantão de Ortopedia
+
+A especialidade deve continuar sendo um atributo textual, portanto **não crie uma Foreign Key para especialidade neste momento**.
+
+---
+
+# 13. Criação do banco
+
+Crie uma migration/schema contendo:
+
+- `CREATE TABLE hospital`
+- `CREATE TABLE medico`
+- `CREATE TABLE plantao`
+- `CREATE TABLE candidatura`
+
+Inclua:
+
+- PRIMARY KEY;
+- FOREIGN KEY;
+- NOT NULL;
+- UNIQUE;
+- CHECK;
+- índices;
+- regras de integridade referencial.
+
+A ordem deve respeitar as dependências:
+
+1. `hospital`
+2. `medico`
+3. `plantao`
+4. `candidatura`
+
+---
+
+# 14. Seed
+
+Crie um arquivo separado para popular o banco.
+
+Pode ser, dependendo da tecnologia utilizada:
+
+- `seed.sql`
+- `seed.ts`
+- `seed.js`
+- `seed.py`
+
+O seed deve:
+
+1. Preparar os dados de desenvolvimento;
+2. Inserir os Hospitais;
+3. Inserir os Médicos;
+4. Inserir os Plantões;
+5. Inserir as Candidaturas;
+6. Garantir que todas as Foreign Keys sejam válidas.
+
+O seed deve poder ser executado sem gerar erros de relacionamento.
+
+---
+
+# 15. Banco que já existe
+
+**Não recrie ou duplique tabelas que já existem.**
+
+Antes de alterar o banco:
+
+1. Analise o schema atual.
+2. Verifique as tabelas existentes.
+3. Verifique as colunas existentes.
+4. Preserve os dados atuais sempre que possível.
+5. Faça migrations para complementar a estrutura existente.
+
+Atualmente já existe uma estrutura inicial semelhante a:
+
+## `hospital`
+
+- `idhospital`
+- `hospitalnome`
+- `cnpjhospital`
+- `cidadehospital`
+
+## `plantao`
+
+- `idplantao`
+- `localizacaoplantao`
+- `dataplantao`
+- `valorplantao`
+- `especialidadeplantao`
+- `statusplantao`
+- `idhospital`
+
+**Mantenha essa nomenclatura para evitar incompatibilidade com o código existente.**
+
+Depois, crie/complemente:
+
+## `medico`
+
+- `idmedico`
+- `nome`
+- `especialidade`
+- `crm`
+- `cidade`
+
+## `candidatura`
+
+- `idcandidatura`
+- `data_candidatura`
+- `status`
+- `idplantao`
+- `idmedico`
+
+---
+
+# 16. Integração com a aplicação
+
+Depois de configurar o banco, ajuste o backend para utilizar os dados reais.
+
+Não mantenha mocks quando as informações puderem ser buscadas diretamente do banco.
+
+A aplicação deve funcionar assim:
+
+- Hospitais → tabela `hospital`
+- Médicos → tabela `medico`
+- Plantões → tabela `plantao`
+- Candidaturas → tabela `candidatura`
+
+Os dados do Hospital responsável pelo Plantão devem ser obtidos pelo relacionamento:
+
+`plantao.idhospital → hospital.idhospital`
+
+As informações de candidatura devem utilizar:
+
+`candidatura.idplantao → plantao.idplantao`
+
+e:
+
+`candidatura.idmedico → medico.idmedico`
+
+---
+
+# 17. API
+
+Caso o projeto utilize API, crie ou ajuste os endpoints:
+
+### Hospitais
+
+`GET /hospitais`
+
+`GET /hospitais/:id`
+
+### Plantões
+
+`GET /plantoes`
+
+`GET /plantoes/:id`
+
+### Médicos
+
+`GET /medicos`
+
+`GET /medicos/:id`
+
+### Candidaturas
+
+`GET /candidaturas`
+
+`POST /candidaturas`
+
+Quando um Médico realizar uma candidatura, o `POST /candidaturas` deve registrar:
+
+- `idmedico`
+- `idplantao`
+- `data_candidatura`
+- `status = 'pendente'`
+
+Não permita que o mesmo Médico se candidate duas vezes ao mesmo Plantão.
+
+---
+
+# 18. Validação do banco
+
+Após criar e popular o banco, execute testes.
+
+Primeiro:
+
+`SELECT * FROM hospital;`
+
+`SELECT * FROM medico;`
+
+`SELECT * FROM plantao;`
+
+`SELECT * FROM candidatura;`
+
+Depois faça JOINs para testar os relacionamentos.
+
+---
+
+## Consulta 1 — Plantões e Hospitais
+
+Mostre cada Plantão junto ao Hospital responsável.
+
+Retorne:
+
+- `idplantao`
+- `hospitalnome`
+- `localizacaoplantao`
+- `dataplantao`
+- `especialidadeplantao`
+- `valorplantao`
+- `statusplantao`
+
+---
+
+## Consulta 2 — Candidaturas completas
+
+Mostre cada Candidatura junto com Médico, Plantão e Hospital.
+
+Retorne:
+
+- ID da candidatura;
+- nome do Médico;
+- CRM;
+- especialidade do Médico;
+- ID do Plantão;
+- especialidade do Plantão;
+- Hospital;
+- data do Plantão;
+- data da Candidatura;
+- status da Candidatura.
+
+O relacionamento deve seguir:
+
+`candidatura → medico`
+
+`candidatura → plantao → hospital`
+
+---
+
+## Consulta 3 — Quantidade de candidatos
+
+Mostre a quantidade de candidatos para cada Plantão.
+
+Inclua também Plantões que possuem **zero candidaturas**.
+
+---
+
+## Consulta 4 — Plantões abertos
+
+Mostre todos os Plantões cujo:
+
+`statusplantao = 'aberto'`
+
+---
+
+## Consulta 5 — Plantões por especialidade
+
+Permita buscar Plantões abertos de determinada especialidade.
+
+Exemplo:
+
+`Cardiologia`
+
+A consulta deve retornar somente Plantões:
+
+- em aberto;
+- da especialidade escolhida.
+
+---
+
+# 19. Validação da quantidade de dados
+
+Ao finalizar, confirme que existem no mínimo:
+
+- **10 Hospitais/Clínicas**
+- **10 Médicos**
+- **15 Plantões**
+- **20 Candidaturas**
+
+Execute uma consulta de contagem para cada tabela.
+
+---
+
+# 20. Regras que obrigatoriamente devem funcionar
+
+Garanta que:
+
+- Nenhum Plantão possa apontar para Hospital inexistente.
+- Nenhuma Candidatura possa apontar para Médico inexistente.
+- Nenhuma Candidatura possa apontar para Plantão inexistente.
+- Um mesmo Médico não possa se candidatar duas vezes ao mesmo Plantão.
+- Um Hospital possa possuir vários Plantões.
+- Um Plantão possa receber várias Candidaturas.
+- Um Médico possa realizar várias Candidaturas.
+- Todas as Foreign Keys estejam funcionando.
+- Os dados estejam efetivamente persistidos no banco.
+- A aplicação utilize os dados do banco em vez de mocks.
+
+---
+
+# 21. Resultado esperado
+
+A estrutura final deve representar:
+
+`HOSPITAL/CLÍNICA → publica → PLANTÃO`
+
+`PLANTÃO → recebe → CANDIDATURA`
+
+`MÉDICO → realiza → CANDIDATURA`
+
+Com as cardinalidades:
+
+`HOSPITAL 1:N PLANTÃO`
+
+`PLANTÃO 1:N CANDIDATURA`
+
+`MÉDICO 1:N CANDIDATURA`
+
+---
+
+# 22. Entrega final
+
+Ao terminar a implementação:
+
+1. Mostre quais migrations foram criadas ou alteradas.
+2. Mostre o schema final das quatro tabelas.
+3. Informe quantos registros foram inseridos em cada tabela.
+4. Execute as consultas de validação.
+5. Confirme que todas as Foreign Keys estão funcionando.
+6. Mostre exemplos dos JOINs entre `hospital`, `plantao`, `candidatura` e `medico`.
+7. Verifique se existem registros órfãos.
+8. Verifique se existem candidaturas duplicadas.
+9. Corrija qualquer erro encontrado antes de considerar a tarefa concluída.
+
+**Não altere os nomes das entidades ou dos principais campos sem necessidade.**
+
+O objetivo final é transformar o modelo conceitual em um **banco de dados relacional funcional, corretamente relacionado, populado com dados fictícios e integrado à aplicação no Replit**.
