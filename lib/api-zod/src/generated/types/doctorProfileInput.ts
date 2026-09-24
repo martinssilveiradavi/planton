@@ -14,12 +14,12 @@ export interface DoctorProfileInput {
   /** @minLength 1 */
   specialty: string;
   /** @minLength 1 */
-  crmNumber: string;
+  crmNumber?: string;
   /**
      * @minLength 2
      * @maxLength 2
      */
-  crmState: string;
+  crmState?: string;
   /** @minLength 1 */
   phone: string;
   /** @minLength 1 */

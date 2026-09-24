@@ -5,3 +5,5 @@
 - [Drizzle wrapped database errors](drizzle-wrapped-errors.md) — PostgreSQL codes and constraints may live in nested `cause` objects rather than on the thrown error.
 - [GPT-5 mini empty JSON responses](gpt5-mini-empty-json.md) — small output budgets may be consumed by reasoning; request minimal reasoning and leave enough completion headroom.
 - [Legacy OIDC account linking](legacy-oidc-linking.md) — link an existing password-era account by email only when the provider affirmatively verifies that email.
+- [Asaas sandbox safety](asaas-sandbox-safety.md) — sandbox hostnames vary; detect “sandbox” broadly and never let development call a production Asaas endpoint.
+- [Doctor subscription access](doctor-subscription-access.md) — only webhook-confirmed active subscriptions may use doctor features; cancellation blocks access immediately.

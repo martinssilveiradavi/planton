@@ -5,6 +5,7 @@
  * Planton — Plataforma de Plantões Médicos
  * OpenAPI spec version: 1.0.0
  */
+import type { SubscriptionSummary } from './subscriptionSummary';
 import type { UserType } from './userType';
 
 export interface User {
@@ -31,4 +32,5 @@ export interface User {
   /** @nullable */
   state?: string | null;
   createdAt: string;
+  subscription?: SubscriptionSummary | null;
 }

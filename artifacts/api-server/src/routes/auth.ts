@@ -6,6 +6,7 @@ import { db, usersTable } from "@workspace/db";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import * as oidc from "openid-client";
+import { getDoctorSubscription, formatSubscription } from "../services/subscriptions";
 import {
   clearSession,
   createSession,
@@ -61,7 +62,10 @@ function profilePathFor(returnTo: string) {
   return returnTo === "/" ? "/register" : `${returnTo}/register`;
 }
 
-function formatUser(user: typeof usersTable.$inferSelect) {
+function formatUser(
+  user: typeof usersTable.$inferSelect,
+  subscription: ReturnType<typeof formatSubscription> = null,
+) {
   if (!user.type) throw new Error("Professional profile is incomplete");
   return {
     id: user.id,
@@ -78,6 +82,7 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     city: user.city,
     state: user.state,
     createdAt: user.createdAt.toISOString(),
+    subscription,
   };
 }
 
@@ -314,8 +319,8 @@ router.post(
       parsed.data.type === "doctor"
         ? {
             specialty: parsed.data.specialty,
-            crmNumber: parsed.data.crmNumber,
-            crmState: parsed.data.crmState,
+            crmNumber: parsed.data.crmNumber ?? null,
+            crmState: parsed.data.crmState ?? null,
             hospitalName: null,
             cnpj: null,
             address: null,
@@ -325,7 +330,7 @@ router.post(
             crmNumber: null,
             crmState: null,
             hospitalName: parsed.data.hospitalName,
-            cnpj: parsed.data.cnpj,
+            cnpj: parsed.data.cnpj ?? null,
             address: parsed.data.address,
           };
 
@@ -361,7 +366,11 @@ router.post(
         });
         return;
       }
-      res.status(201).json(formatUser(user));
+      const subscription =
+        user.type === "doctor"
+          ? formatSubscription(await getDoctorSubscription(user.id))
+          : null;
+      res.status(201).json(formatUser(user, subscription));
     } catch (error) {
       const uniqueViolation = getUniqueViolation(error);
       if (uniqueViolation) {
@@ -389,7 +398,11 @@ router.get("/auth/me", async (req: Request, res: Response): Promise<void> => {
     res.status(401).json({ error: "Perfil profissional não concluído" });
     return;
   }
-  res.json(formatUser(user));
+  const subscription =
+    user.type === "doctor"
+      ? formatSubscription(await getDoctorSubscription(user.id))
+      : null;
+  res.json(formatUser(user, subscription));
 });
 
 export default router;

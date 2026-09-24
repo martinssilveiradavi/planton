@@ -21,6 +21,38 @@ export const UserType = {
   hospital: 'hospital',
 } as const;
 
+export type SubscriptionSummaryCycle = typeof SubscriptionSummaryCycle[keyof typeof SubscriptionSummaryCycle];
+
+
+export const SubscriptionSummaryCycle = {
+  MONTHLY: 'MONTHLY',
+} as const;
+
+export type SubscriptionSummaryStatus = typeof SubscriptionSummaryStatus[keyof typeof SubscriptionSummaryStatus];
+
+
+export const SubscriptionSummaryStatus = {
+  PENDENTE: 'PENDENTE',
+  ATIVA: 'ATIVA',
+  INADIMPLENTE: 'INADIMPLENTE',
+  CANCELADA: 'CANCELADA',
+} as const;
+
+export interface SubscriptionSummary {
+  id: number;
+  value: number;
+  cycle: SubscriptionSummaryCycle;
+  status: SubscriptionSummaryStatus;
+  /** @nullable */
+  nextDueDate: string | null;
+  /** @nullable */
+  invoiceUrl: string | null;
+  /** @nullable */
+  lastPaymentStatus: string | null;
+  /** @nullable */
+  lastPaymentAt?: string | null;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -45,7 +77,10 @@ export interface User {
   /** @nullable */
   state?: string | null;
   createdAt: string;
+  subscription?: SubscriptionSummary | null;
 }
+
+export type SubscriptionResponse = SubscriptionSummary | null;
 
 export interface AuthUser {
   id: string;
@@ -77,12 +112,12 @@ export interface DoctorProfileInput {
   /** @minLength 1 */
   specialty: string;
   /** @minLength 1 */
-  crmNumber: string;
+  crmNumber?: string;
   /**
      * @minLength 2
      * @maxLength 2
      */
-  crmState: string;
+  crmState?: string;
   /** @minLength 1 */
   phone: string;
   /** @minLength 1 */
@@ -108,7 +143,7 @@ export interface HospitalProfileInput {
   /** @minLength 2 */
   hospitalName: string;
   /** @minLength 1 */
-  cnpj: string;
+  cnpj?: string;
   /** @minLength 1 */
   phone: string;
   /** @minLength 1 */
@@ -150,7 +185,7 @@ export interface Shift {
   date: string;
   startTime: string;
   endTime: string;
-  /** @minimum 0 */
+  /** @minimum 0.01 */
   remuneration: number;
   address: string;
   city: string;
@@ -175,7 +210,7 @@ export interface ShiftInput {
   date: string;
   startTime: string;
   endTime: string;
-  /** @minimum 0 */
+  /** @minimum 0.01 */
   remuneration: number;
   address: string;
   city: string;
@@ -210,7 +245,7 @@ export interface ShiftUpdate {
   date?: string;
   startTime?: string;
   endTime?: string;
-  /** @minimum 0 */
+  /** @minimum 0.01 */
   remuneration?: number;
   address?: string;
   city?: string;
@@ -285,6 +320,34 @@ export const ApplicationStatus = {
   REJEITADO: 'REJEITADO',
 } as const;
 
+export type PaymentSummaryStatus = typeof PaymentSummaryStatus[keyof typeof PaymentSummaryStatus];
+
+
+export const PaymentSummaryStatus = {
+  AGUARDANDO_PAGAMENTO: 'AGUARDANDO_PAGAMENTO',
+  PAGO: 'PAGO',
+  LIBERADO: 'LIBERADO',
+  ESTORNADO: 'ESTORNADO',
+  FALHOU: 'FALHOU',
+} as const;
+
+export interface PaymentSummary {
+  id: number;
+  status: PaymentSummaryStatus;
+  /** @nullable */
+  asaasStatus?: string | null;
+  /** @nullable */
+  invoiceUrl?: string | null;
+  grossAmount: number;
+  platformFeePercent: number;
+  platformFeeAmount: number;
+  doctorAmount: number;
+  /** @nullable */
+  paidAt?: string | null;
+  /** @nullable */
+  releasedAt?: string | null;
+}
+
 export interface Application {
   id: number;
   shiftId: number;
@@ -301,6 +364,7 @@ export interface Application {
   notes?: string | null;
   createdAt: string;
   updatedAt?: string;
+  payment?: PaymentSummary | null;
 }
 
 export interface ApplicationInput {

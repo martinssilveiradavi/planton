@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ApplicationStatus } from './applicationStatus';
+import type { PaymentSummary } from './paymentSummary';
 import type { Shift } from './shift';
 
 export interface Application {
@@ -24,4 +25,5 @@ export interface Application {
   notes?: string | null;
   createdAt: string;
   updatedAt?: string;
+  payment?: PaymentSummary | null;
 }

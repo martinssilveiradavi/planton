@@ -79,6 +79,18 @@ export default function Discovery() {
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-56px)]">
+      <header className="border-b px-4 py-4">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-xl font-bold text-foreground">
+            Encontre o plantão médico ideal para você
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Explore oportunidades por especialidade e localização, com
+            recomendações por inteligência artificial.
+          </p>
+        </div>
+      </header>
+
       {/* Stats bar */}
       {stats && (
         <div className="border-b bg-secondary/50 px-4 py-2">

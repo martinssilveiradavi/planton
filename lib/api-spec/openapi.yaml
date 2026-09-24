@@ -18,6 +18,8 @@ tags:
     description: Candidaturas de médicos
   - name: ai
     description: Recomendações inteligentes de plantões
+  - name: subscriptions
+    description: Assinatura mensal dos médicos
 paths:
   /healthz:
     get:
@@ -136,6 +138,92 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Doctor subscription ───────────────────────────────────────────────────
+  /subscriptions/me:
+    get:
+      operationId: getMySubscription
+      tags: [subscriptions]
+      summary: Consultar a assinatura mensal do médico
+      responses:
+        "200":
+          description: Estado da assinatura
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Apenas médicos podem consultar assinatura
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: cancelMySubscription
+      tags: [subscriptions]
+      summary: Cancelar a assinatura mensal do médico
+      responses:
+        "200":
+          description: Assinatura cancelada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Apenas médicos podem cancelar assinatura
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /subscriptions:
+    post:
+      operationId: createMySubscription
+      tags: [subscriptions]
+      summary: Criar ou recuperar a assinatura mensal do médico
+      responses:
+        "201":
+          description: Assinatura criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "200":
+          description: Assinatura já existente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Apenas médicos podem assinar
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Falha no Asaas
           content:
             application/json:
               schema:
@@ -501,6 +589,38 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+        subscription:
+          oneOf:
+            - $ref: "#/components/schemas/SubscriptionSummary"
+            - type: "null"
+
+    SubscriptionSummary:
+      type: object
+      required: [id, value, cycle, status, nextDueDate, invoiceUrl, lastPaymentStatus]
+      properties:
+        id:
+          type: number
+        value:
+          type: number
+        cycle:
+          type: string
+          enum: [MONTHLY]
+        status:
+          type: string
+          enum: [PENDENTE, ATIVA, INADIMPLENTE, CANCELADA]
+        nextDueDate:
+          type: ["string", "null"]
+        invoiceUrl:
+          type: ["string", "null"]
+        lastPaymentStatus:
+          type: ["string", "null"]
+        lastPaymentAt:
+          type: ["string", "null"]
+
+    SubscriptionResponse:
+      oneOf:
+        - $ref: "#/components/schemas/SubscriptionSummary"
+        - type: "null"
 
     AuthUser:
       type: object
@@ -535,7 +655,7 @@ components:
 
     DoctorProfileInput:
       type: object
-      required: [name, type, specialty, crmNumber, crmState, phone, city, state]
+      required: [name, type, specialty, phone, city, state]
       properties:
         name:
           type: string
@@ -566,7 +686,7 @@ components:
 
     HospitalProfileInput:
       type: object
-      required: [name, type, hospitalName, cnpj, phone, address, city, state]
+      required: [name, type, hospitalName, phone, address, city, state]
       properties:
         name:
           type: string
@@ -621,7 +741,7 @@ components:
           type: string
         remuneration:
           type: number
-          minimum: 0
+          minimum: 0.01
         address:
           type: string
         city:
@@ -664,7 +784,7 @@ components:
           type: string
         remuneration:
           type: number
-          minimum: 0
+          minimum: 0.01
         address:
           type: string
         city:
@@ -699,7 +819,7 @@ components:
           type: string
         remuneration:
           type: number
-          minimum: 0
+          minimum: 0.01
         address:
           type: string
         city:
@@ -830,6 +950,36 @@ components:
           type: string
         updatedAt:
           type: string
+        payment:
+          oneOf:
+            - $ref: "#/components/schemas/PaymentSummary"
+            - type: "null"
+
+    PaymentSummary:
+      type: object
+      required: [id, status, grossAmount, platformFeePercent, platformFeeAmount, doctorAmount]
+      properties:
+        id:
+          type: number
+        status:
+          type: string
+          enum: [AGUARDANDO_PAGAMENTO, PAGO, LIBERADO, ESTORNADO, FALHOU]
+        asaasStatus:
+          type: ["string", "null"]
+        invoiceUrl:
+          type: ["string", "null"]
+        grossAmount:
+          type: number
+        platformFeePercent:
+          type: number
+        platformFeeAmount:
+          type: number
+        doctorAmount:
+          type: number
+        paidAt:
+          type: ["string", "null"]
+        releasedAt:
+          type: ["string", "null"]
 
     ApplicationInput:
       type: object

@@ -53,7 +53,7 @@ const schema = z.object({
   date: z.string().min(1, 'Data obrigatória'),
   startTime: z.string().min(1, 'Hora de início obrigatória'),
   endTime: z.string().min(1, 'Hora de término obrigatória'),
-  remuneration: z.coerce.number().min(0, 'Valor deve ser positivo'),
+  remuneration: z.coerce.number().min(0.01, 'Informe um valor maior que zero'),
   address: z.string().min(1, 'Endereço obrigatório'),
   city: z.string().min(1, 'Cidade obrigatória'),
   state: z.string().min(1, 'Estado obrigatório'),
@@ -87,7 +87,7 @@ export default function Publish() {
       date: '',
       startTime: '',
       endTime: '',
-      remuneration: 0,
+       remuneration: 0,
       address: '',
       city: '',
       state: '',
@@ -302,7 +302,10 @@ export default function Publish() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Remuneração</CardTitle>
-            <CardDescription>Valor total a ser pago pelo plantão</CardDescription>
+            <CardDescription>
+              O hospital define o valor desta solicitação. Ele será usado como
+              valor do produto e da cobrança no Asaas.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-1.5">

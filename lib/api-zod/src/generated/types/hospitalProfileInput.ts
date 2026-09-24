@@ -14,7 +14,7 @@ export interface HospitalProfileInput {
   /** @minLength 2 */
   hospitalName: string;
   /** @minLength 1 */
-  cnpj: string;
+  cnpj?: string;
   /** @minLength 1 */
   phone: string;
   /** @minLength 1 */

@@ -37,6 +37,7 @@ import type {
   ShiftList,
   ShiftStats,
   ShiftUpdate,
+  SubscriptionResponse,
   User
 } from './api.schemas';
 
@@ -613,6 +614,225 @@ export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUs
 
 
 
+
+export const getGetMySubscriptionUrl = () => {
+
+
+
+
+  return `/api/subscriptions/me`
+}
+
+/**
+ * @summary Consultar a assinatura mensal do médico
+ */
+export const getMySubscription = async ( options?: Parameters<typeof customFetch>[1]): Promise<SubscriptionResponse> => {
+
+  return customFetch<SubscriptionResponse>(getGetMySubscriptionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMySubscriptionQueryKey = () => {
+    return [
+    `/api/subscriptions/me`
+    ] as const;
+    }
+
+
+export const getGetMySubscriptionQueryOptions = <TData = Awaited<ReturnType<typeof getMySubscription>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySubscription>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMySubscriptionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMySubscription>>> = ({ signal }) => getMySubscription({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMySubscription>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMySubscriptionQueryResult = NonNullable<Awaited<ReturnType<typeof getMySubscription>>>
+export type GetMySubscriptionQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Consultar a assinatura mensal do médico
+ */
+
+export function useGetMySubscription<TData = Awaited<ReturnType<typeof getMySubscription>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySubscription>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMySubscriptionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCancelMySubscriptionUrl = () => {
+
+
+
+
+  return `/api/subscriptions/me`
+}
+
+/**
+ * @summary Cancelar a assinatura mensal do médico
+ */
+export const cancelMySubscription = async ( options?: Parameters<typeof customFetch>[1]): Promise<SubscriptionResponse> => {
+
+  return customFetch<SubscriptionResponse>(getCancelMySubscriptionUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getCancelMySubscriptionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelMySubscription>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelMySubscription>>, TError,void, TContext> => {
+
+const mutationKey = ['cancelMySubscription'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelMySubscription>>, void> = () => {
+
+
+          return  cancelMySubscription(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelMySubscriptionMutationResult = NonNullable<Awaited<ReturnType<typeof cancelMySubscription>>>
+
+    export type CancelMySubscriptionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Cancelar a assinatura mensal do médico
+ */
+export const useCancelMySubscription = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelMySubscription>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelMySubscription>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCancelMySubscriptionMutationOptions(options));
+    }
+
+export const getCreateMySubscriptionUrl = () => {
+
+
+
+
+  return `/api/subscriptions`
+}
+
+/**
+ * @summary Criar ou recuperar a assinatura mensal do médico
+ */
+export const createMySubscription = async ( options?: Parameters<typeof customFetch>[1]): Promise<SubscriptionResponse> => {
+
+  return customFetch<SubscriptionResponse>(getCreateMySubscriptionUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreateMySubscriptionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMySubscription>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMySubscription>>, TError,void, TContext> => {
+
+const mutationKey = ['createMySubscription'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMySubscription>>, void> = () => {
+
+
+          return  createMySubscription(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMySubscriptionMutationResult = NonNullable<Awaited<ReturnType<typeof createMySubscription>>>
+
+    export type CreateMySubscriptionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Criar ou recuperar a assinatura mensal do médico
+ */
+export const useCreateMySubscription = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMySubscription>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMySubscription>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCreateMySubscriptionMutationOptions(options));
+    }
 
 export const getRecommendShiftsUrl = () => {
 

@@ -48,8 +48,8 @@ export const CompleteProfileBody = zod.union([zod.object({
   "name": zod.string().min(completeProfileBodyOneNameMin),
   "type": zod.enum(['doctor']),
   "specialty": zod.string().min(1),
-  "crmNumber": zod.string().min(1),
-  "crmState": zod.string().min(completeProfileBodyOneCrmStateMin).max(completeProfileBodyOneCrmStateMax),
+  "crmNumber": zod.string().min(1).optional(),
+  "crmState": zod.string().min(completeProfileBodyOneCrmStateMin).max(completeProfileBodyOneCrmStateMax).optional(),
   "phone": zod.string().min(1),
   "city": zod.string().min(1),
   "state": zod.string().min(completeProfileBodyOneStateMin).max(completeProfileBodyOneStateMax)
@@ -57,7 +57,7 @@ export const CompleteProfileBody = zod.union([zod.object({
   "name": zod.string().min(completeProfileBodyTwoNameMin),
   "type": zod.enum(['hospital']),
   "hospitalName": zod.string().min(completeProfileBodyTwoHospitalNameMin),
-  "cnpj": zod.string().min(1),
+  "cnpj": zod.string().min(1).optional(),
   "phone": zod.string().min(1),
   "address": zod.string().min(1),
   "city": zod.string().min(1),
@@ -78,7 +78,17 @@ export const CompleteProfileResponse = zod.object({
   "address": zod.string().nullish(),
   "city": zod.string().nullish(),
   "state": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "subscription": zod.union([zod.object({
+  "id": zod.number(),
+  "value": zod.number(),
+  "cycle": zod.enum(['MONTHLY']),
+  "status": zod.enum(['PENDENTE', 'ATIVA', 'INADIMPLENTE', 'CANCELADA']),
+  "nextDueDate": zod.string().nullable(),
+  "invoiceUrl": zod.string().nullable(),
+  "lastPaymentStatus": zod.string().nullable(),
+  "lastPaymentAt": zod.string().nullish()
+}),zod.null()]).optional()
 })
 
 
@@ -139,8 +149,63 @@ export const GetCurrentUserResponse = zod.object({
   "address": zod.string().nullish(),
   "city": zod.string().nullish(),
   "state": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "subscription": zod.union([zod.object({
+  "id": zod.number(),
+  "value": zod.number(),
+  "cycle": zod.enum(['MONTHLY']),
+  "status": zod.enum(['PENDENTE', 'ATIVA', 'INADIMPLENTE', 'CANCELADA']),
+  "nextDueDate": zod.string().nullable(),
+  "invoiceUrl": zod.string().nullable(),
+  "lastPaymentStatus": zod.string().nullable(),
+  "lastPaymentAt": zod.string().nullish()
+}),zod.null()]).optional()
 })
+
+
+/**
+ * @summary Consultar a assinatura mensal do médico
+ */
+export const GetMySubscriptionResponse = zod.union([zod.object({
+  "id": zod.number(),
+  "value": zod.number(),
+  "cycle": zod.enum(['MONTHLY']),
+  "status": zod.enum(['PENDENTE', 'ATIVA', 'INADIMPLENTE', 'CANCELADA']),
+  "nextDueDate": zod.string().nullable(),
+  "invoiceUrl": zod.string().nullable(),
+  "lastPaymentStatus": zod.string().nullable(),
+  "lastPaymentAt": zod.string().nullish()
+}),zod.null()])
+
+
+/**
+ * @summary Cancelar a assinatura mensal do médico
+ */
+export const CancelMySubscriptionResponse = zod.union([zod.object({
+  "id": zod.number(),
+  "value": zod.number(),
+  "cycle": zod.enum(['MONTHLY']),
+  "status": zod.enum(['PENDENTE', 'ATIVA', 'INADIMPLENTE', 'CANCELADA']),
+  "nextDueDate": zod.string().nullable(),
+  "invoiceUrl": zod.string().nullable(),
+  "lastPaymentStatus": zod.string().nullable(),
+  "lastPaymentAt": zod.string().nullish()
+}),zod.null()])
+
+
+/**
+ * @summary Criar ou recuperar a assinatura mensal do médico
+ */
+export const CreateMySubscriptionResponse = zod.union([zod.object({
+  "id": zod.number(),
+  "value": zod.number(),
+  "cycle": zod.enum(['MONTHLY']),
+  "status": zod.enum(['PENDENTE', 'ATIVA', 'INADIMPLENTE', 'CANCELADA']),
+  "nextDueDate": zod.string().nullable(),
+  "invoiceUrl": zod.string().nullable(),
+  "lastPaymentStatus": zod.string().nullable(),
+  "lastPaymentAt": zod.string().nullish()
+}),zod.null()])
 
 
 /**
@@ -162,7 +227,7 @@ export const RecommendShiftsBody = zod.object({
 export const recommendShiftsResponseRecommendationsItemScoreMin = 0;
 export const recommendShiftsResponseRecommendationsItemScoreMax = 100;
 
-export const recommendShiftsResponseRecommendationsItemShiftRemunerationMin = 0;
+export const recommendShiftsResponseRecommendationsItemShiftRemunerationMin = 0.01;
 
 export const recommendShiftsResponseRecommendationsMax = 1;
 
@@ -222,7 +287,7 @@ export const ListShiftsQueryParams = zod.object({
   "limit": zod.coerce.number().default(listShiftsQueryLimitDefault)
 })
 
-export const listShiftsResponseShiftsItemRemunerationMin = 0;
+export const listShiftsResponseShiftsItemRemunerationMin = 0.01;
 
 
 
@@ -262,7 +327,7 @@ export const createShiftBodyTitleMin = 3;
 
 export const createShiftBodySpecialtyMin = 2;
 
-export const createShiftBodyRemunerationMin = 0;
+export const createShiftBodyRemunerationMin = 0.01;
 
 export const createShiftBodyLatitudeMin = -90;
 export const createShiftBodyLatitudeMax = 90;
@@ -288,7 +353,7 @@ export const CreateShiftBody = zod.object({
   "longitude": zod.number().min(createShiftBodyLongitudeMin).max(createShiftBodyLongitudeMax).optional()
 })
 
-export const createShiftResponseRemunerationMin = 0;
+export const createShiftResponseRemunerationMin = 0.01;
 
 
 
@@ -319,7 +384,7 @@ export const CreateShiftResponse = zod.object({
 /**
  * @summary Estatísticas de plantões disponíveis (dashboard)
  */
-export const getShiftStatsResponseRecentlyAddedItemRemunerationMin = 0;
+export const getShiftStatsResponseRecentlyAddedItemRemunerationMin = 0.01;
 
 
 
@@ -362,7 +427,7 @@ export const GetShiftParams = zod.object({
   "id": zod.coerce.number()
 })
 
-export const getShiftResponseRemunerationMin = 0;
+export const getShiftResponseRemunerationMin = 0.01;
 
 
 
@@ -397,7 +462,7 @@ export const UpdateShiftParams = zod.object({
   "id": zod.coerce.number()
 })
 
-export const updateShiftBodyRemunerationMin = 0;
+export const updateShiftBodyRemunerationMin = 0.01;
 
 export const updateShiftBodyLatitudeMin = -90;
 export const updateShiftBodyLatitudeMax = 90;
@@ -424,7 +489,7 @@ export const UpdateShiftBody = zod.object({
   "status": zod.enum(['ABERTO', 'PREENCHIDO', 'CANCELADO', 'ENCERRADO']).optional()
 })
 
-export const updateShiftResponseRemunerationMin = 0;
+export const updateShiftResponseRemunerationMin = 0.01;
 
 
 
@@ -469,7 +534,7 @@ export const ListShiftApplicationsParams = zod.object({
   "id": zod.coerce.number()
 })
 
-export const listShiftApplicationsResponseShiftRemunerationMin = 0;
+export const listShiftApplicationsResponseShiftRemunerationMin = 0.01;
 
 
 
@@ -505,7 +570,19 @@ export const ListShiftApplicationsResponseItem = zod.object({
   "status": zod.enum(['PENDENTE', 'SELECIONADO', 'REJEITADO']),
   "notes": zod.string().nullish(),
   "createdAt": zod.string(),
-  "updatedAt": zod.string().optional()
+  "updatedAt": zod.string().optional(),
+  "payment": zod.union([zod.object({
+  "id": zod.number(),
+  "status": zod.enum(['AGUARDANDO_PAGAMENTO', 'PAGO', 'LIBERADO', 'ESTORNADO', 'FALHOU']),
+  "asaasStatus": zod.string().nullish(),
+  "invoiceUrl": zod.string().nullish(),
+  "grossAmount": zod.number(),
+  "platformFeePercent": zod.number(),
+  "platformFeeAmount": zod.number(),
+  "doctorAmount": zod.number(),
+  "paidAt": zod.string().nullish(),
+  "releasedAt": zod.string().nullish()
+}),zod.null()]).optional()
 })
 export const ListShiftApplicationsResponse = zod.array(ListShiftApplicationsResponseItem)
 
@@ -513,7 +590,7 @@ export const ListShiftApplicationsResponse = zod.array(ListShiftApplicationsResp
 /**
  * @summary Candidaturas do usuário logado
  */
-export const listApplicationsResponseShiftRemunerationMin = 0;
+export const listApplicationsResponseShiftRemunerationMin = 0.01;
 
 
 
@@ -549,7 +626,19 @@ export const ListApplicationsResponseItem = zod.object({
   "status": zod.enum(['PENDENTE', 'SELECIONADO', 'REJEITADO']),
   "notes": zod.string().nullish(),
   "createdAt": zod.string(),
-  "updatedAt": zod.string().optional()
+  "updatedAt": zod.string().optional(),
+  "payment": zod.union([zod.object({
+  "id": zod.number(),
+  "status": zod.enum(['AGUARDANDO_PAGAMENTO', 'PAGO', 'LIBERADO', 'ESTORNADO', 'FALHOU']),
+  "asaasStatus": zod.string().nullish(),
+  "invoiceUrl": zod.string().nullish(),
+  "grossAmount": zod.number(),
+  "platformFeePercent": zod.number(),
+  "platformFeeAmount": zod.number(),
+  "doctorAmount": zod.number(),
+  "paidAt": zod.string().nullish(),
+  "releasedAt": zod.string().nullish()
+}),zod.null()]).optional()
 })
 export const ListApplicationsResponse = zod.array(ListApplicationsResponseItem)
 
@@ -562,7 +651,7 @@ export const CreateApplicationBody = zod.object({
   "notes": zod.string().optional()
 })
 
-export const createApplicationResponseShiftRemunerationMin = 0;
+export const createApplicationResponseShiftRemunerationMin = 0.01;
 
 
 
@@ -598,7 +687,19 @@ export const CreateApplicationResponse = zod.object({
   "status": zod.enum(['PENDENTE', 'SELECIONADO', 'REJEITADO']),
   "notes": zod.string().nullish(),
   "createdAt": zod.string(),
-  "updatedAt": zod.string().optional()
+  "updatedAt": zod.string().optional(),
+  "payment": zod.union([zod.object({
+  "id": zod.number(),
+  "status": zod.enum(['AGUARDANDO_PAGAMENTO', 'PAGO', 'LIBERADO', 'ESTORNADO', 'FALHOU']),
+  "asaasStatus": zod.string().nullish(),
+  "invoiceUrl": zod.string().nullish(),
+  "grossAmount": zod.number(),
+  "platformFeePercent": zod.number(),
+  "platformFeeAmount": zod.number(),
+  "doctorAmount": zod.number(),
+  "paidAt": zod.string().nullish(),
+  "releasedAt": zod.string().nullish()
+}),zod.null()]).optional()
 })
 
 
@@ -614,7 +715,7 @@ export const UpdateApplicationBody = zod.object({
   "notes": zod.string().optional()
 })
 
-export const updateApplicationResponseShiftRemunerationMin = 0;
+export const updateApplicationResponseShiftRemunerationMin = 0.01;
 
 
 
@@ -650,7 +751,19 @@ export const UpdateApplicationResponse = zod.object({
   "status": zod.enum(['PENDENTE', 'SELECIONADO', 'REJEITADO']),
   "notes": zod.string().nullish(),
   "createdAt": zod.string(),
-  "updatedAt": zod.string().optional()
+  "updatedAt": zod.string().optional(),
+  "payment": zod.union([zod.object({
+  "id": zod.number(),
+  "status": zod.enum(['AGUARDANDO_PAGAMENTO', 'PAGO', 'LIBERADO', 'ESTORNADO', 'FALHOU']),
+  "asaasStatus": zod.string().nullish(),
+  "invoiceUrl": zod.string().nullish(),
+  "grossAmount": zod.number(),
+  "platformFeePercent": zod.number(),
+  "platformFeeAmount": zod.number(),
+  "doctorAmount": zod.number(),
+  "paidAt": zod.string().nullish(),
+  "releasedAt": zod.string().nullish()
+}),zod.null()]).optional()
 })
 
 

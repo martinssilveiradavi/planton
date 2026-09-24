@@ -16,7 +16,7 @@ export interface ShiftInput {
   date: string;
   startTime: string;
   endTime: string;
-  /** @minimum 0 */
+  /** @minimum 0.01 */
   remuneration: number;
   address: string;
   city: string;

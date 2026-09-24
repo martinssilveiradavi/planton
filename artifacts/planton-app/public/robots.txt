@@ -1,2 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /my-shifts
+Disallow: /candidates/
+Disallow: /publish
+Disallow: /subscription
+
+Sitemap: https://plataforma-plantoes-medicos.replit.app/sitemap.xml

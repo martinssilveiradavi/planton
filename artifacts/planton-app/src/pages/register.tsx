@@ -44,11 +44,23 @@ const STATES = [
   "SP", "SE", "TO",
 ];
 
+const optionalText = z.preprocess(
+  (value) =>
+    typeof value === "string" && value.trim() === "" ? undefined : value,
+  z.string().optional(),
+);
+
+const optionalState = z.preprocess(
+  (value) =>
+    typeof value === "string" && value.trim() === "" ? undefined : value,
+  z.string().length(2, "Selecione a UF").optional(),
+);
+
 const doctorSchema = z.object({
   name: z.string().min(2, "Informe seu nome completo"),
   specialty: z.string().min(1, "Especialidade obrigatória"),
-  crmNumber: z.string().min(1, "CRM obrigatório"),
-  crmState: z.string().length(2, "Selecione a UF do CRM"),
+  crmNumber: optionalText,
+  crmState: optionalState,
   phone: z.string().min(1, "Telefone obrigatório"),
   city: z.string().min(1, "Cidade obrigatória"),
   state: z.string().length(2, "Selecione o estado"),
@@ -56,7 +68,7 @@ const doctorSchema = z.object({
 const hospitalSchema = z.object({
   name: z.string().min(2, "Informe o nome do responsável"),
   hospitalName: z.string().min(2, "Nome da instituição obrigatório"),
-  cnpj: z.string().min(1, "CNPJ obrigatório"),
+  cnpj: optionalText,
   phone: z.string().min(1, "Telefone obrigatório"),
   address: z.string().min(1, "Endereço obrigatório"),
   city: z.string().min(1, "Cidade obrigatória"),
@@ -188,7 +200,7 @@ export default function Register() {
             <div className="space-y-1.5"><Label>Nome completo</Label><Input {...doctorForm.register("name")} /><FieldError message={doctorForm.formState.errors.name?.message} /></div>
             <div className="space-y-1.5"><Label>Especialidade</Label><Select onValueChange={(value) => doctorForm.setValue("specialty", value)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{SPECIALTIES.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><FieldError message={doctorForm.formState.errors.specialty?.message} /></div>
             <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2 space-y-1.5"><Label>CRM</Label><Input {...doctorForm.register("crmNumber")} /></div>
+              <div className="col-span-2 space-y-1.5"><Label>CRM (opcional durante os testes)</Label><Input {...doctorForm.register("crmNumber")} /></div>
               <div className="space-y-1.5"><Label>UF</Label><Select onValueChange={(value) => doctorForm.setValue("crmState", value)}><SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger><SelectContent>{STATES.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="space-y-1.5"><Label>Telefone</Label><Input {...doctorForm.register("phone")} /></div>
@@ -214,7 +226,7 @@ export default function Register() {
         <form className="space-y-4" onSubmit={hospitalForm.handleSubmit((values) => completeProfile.mutate({ data: { ...values, type: "hospital" } }))}>
           <div className="space-y-1.5"><Label>Nome do responsável</Label><Input {...hospitalForm.register("name")} /></div>
           <div className="space-y-1.5"><Label>Hospital ou clínica</Label><Input {...hospitalForm.register("hospitalName")} /></div>
-          <div className="space-y-1.5"><Label>CNPJ</Label><Input {...hospitalForm.register("cnpj")} /></div>
+          <div className="space-y-1.5"><Label>CNPJ (opcional durante os testes)</Label><Input {...hospitalForm.register("cnpj")} /></div>
           <div className="space-y-1.5"><Label>Telefone</Label><Input {...hospitalForm.register("phone")} /></div>
           <div className="space-y-1.5"><Label>Endereço</Label><Input {...hospitalForm.register("address")} /></div>
           <div className="grid grid-cols-3 gap-3">

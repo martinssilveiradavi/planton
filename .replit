@@ -21,3 +21,14 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.production]
+VITE_POSTHOG_HOST = "https://us.i.posthog.com"
+ASAAS_BASE_URL_SANDBOX = "https://api-sandbox.asaas.com/v3"
+ASAAS_ENVIRONMENT = "sandbox"
+
+[userenv.development]
+ASAAS_BASE_URL_SANDBOX = "https://api-sandbox.asaas.com/v3"
+ASAAS_ENVIRONMENT = "sandbox"

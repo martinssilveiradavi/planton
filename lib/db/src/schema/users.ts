@@ -31,6 +31,8 @@ export const usersTable = pgTable(
     address: text("address"),
     city: text("city"),
     state: text("state"),
+    asaasWalletId: text("asaas_wallet_id"),
+    asaasCustomerId: text("asaas_customer_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },
@@ -39,7 +41,7 @@ export const usersTable = pgTable(
     check(
       "users_profile_auth_check",
       sql`${table.type} is null
-        or (${table.type} = 'doctor' and ${table.specialty} is not null and ${table.crmNumber} is not null)
+        or (${table.type} = 'doctor' and ${table.specialty} is not null)
         or (${table.type} = 'hospital' and ${table.hospitalName} is not null)`,
     ),
     check("users_state_check", sql`${table.state} is null or char_length(${table.state}) = 2`),

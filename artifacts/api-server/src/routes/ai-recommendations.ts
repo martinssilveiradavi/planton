@@ -11,6 +11,7 @@ import {
   type AiRecommendationRecord,
 } from "@workspace/db";
 import { RecommendShiftsBody } from "@workspace/api-zod";
+import { requireActiveDoctorSubscription } from "../middlewares/auth";
 
 const router: IRouter = Router();
 const MODEL = "gpt-5-mini";
@@ -188,6 +189,7 @@ function estimateCostUsd(promptTokens = 0, completionTokens = 0) {
 
 router.post(
   "/ai/recommend-shifts",
+  requireActiveDoctorSubscription,
   async (req: Request, res: Response): Promise<void> => {
     const parsed = RecommendShiftsBody.safeParse(req.body ?? {});
     if (!parsed.success) {

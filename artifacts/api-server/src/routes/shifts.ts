@@ -1,5 +1,11 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, shiftsTable, usersTable, applicationsTable } from "@workspace/db";
+import {
+  db,
+  shiftsTable,
+  usersTable,
+  applicationsTable,
+  paymentsTable,
+} from "@workspace/db";
 import { eq, and, gte, lte, ilike, sql, desc } from "drizzle-orm";
 import {
   CreateShiftBody,
@@ -314,13 +320,15 @@ router.get("/shifts/:id/applications", requireHospital, async (req: Request, res
     .select({
       application: applicationsTable,
       doctor: usersTable,
+      payment: paymentsTable,
     })
     .from(applicationsTable)
     .leftJoin(usersTable, eq(applicationsTable.doctorId, usersTable.id))
+    .leftJoin(paymentsTable, eq(paymentsTable.applicationId, applicationsTable.id))
     .where(eq(applicationsTable.shiftId, params.data.id))
     .orderBy(desc(applicationsTable.createdAt));
 
-  const applications = rows.map(({ application, doctor }) => ({
+  const applications = rows.map(({ application, doctor, payment }) => ({
     id: application.id,
     shiftId: application.shiftId,
     doctorId: application.doctorId,
@@ -331,6 +339,20 @@ router.get("/shifts/:id/applications", requireHospital, async (req: Request, res
     notes: application.notes,
     createdAt: application.createdAt.toISOString(),
     updatedAt: application.updatedAt.toISOString(),
+    payment: payment
+      ? {
+          id: payment.id,
+          status: payment.status,
+          asaasStatus: payment.asaasStatus,
+          invoiceUrl: payment.invoiceUrl,
+          grossAmount: payment.grossAmount,
+          platformFeePercent: payment.platformFeePercent,
+          platformFeeAmount: payment.platformFeeAmount,
+          doctorAmount: payment.doctorAmount,
+          paidAt: payment.paidAt?.toISOString() ?? null,
+          releasedAt: payment.releasedAt?.toISOString() ?? null,
+        }
+      : null,
   }));
 
   res.json(applications);

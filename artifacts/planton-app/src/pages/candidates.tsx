@@ -18,7 +18,7 @@ import {
   Application,
 } from '@workspace/api-client-react';
 import {
-  ChevronLeft, Users, CheckCircle2, XCircle, Loader2, AlertCircle
+  ChevronLeft, Users, CheckCircle2, XCircle, Loader2, AlertCircle, ExternalLink
 } from 'lucide-react';
 import { formatRemuneration, formatDate } from '../components/shift-card';
 
@@ -227,6 +227,20 @@ export default function Candidates() {
                     Rejeitar
                   </Button>
                 </div>
+              )}
+
+              {app.status === 'SELECIONADO' && app.payment?.invoiceUrl && (
+                <a
+                  href={app.payment.invoiceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-block"
+                >
+                  <Button size="sm" variant="outline" className="gap-1.5">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Abrir cobrança Asaas
+                  </Button>
+                </a>
               )}
             </div>
           ))}

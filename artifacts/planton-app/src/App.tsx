@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@workspace/planton-ds/components/ui/toaster';
@@ -18,6 +18,9 @@ import MyShifts from '@/pages/my-shifts';
 import Candidates from '@/pages/candidates';
 import Login from '@/pages/login';
 import Register from '@/pages/register';
+import Subscription from '@/pages/subscription';
+import { DoctorAccessGate } from '@/components/doctor-access-gate';
+import { trackPage } from '@/lib/analytics';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,18 +37,28 @@ function Router() {
       <Switch>
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
+        <Route path="/subscription">
+          <div className="flex min-h-[100dvh] flex-col bg-background">
+            <Navbar />
+            <main className="flex-1">
+              <Subscription />
+            </main>
+          </div>
+        </Route>
         <Route>
           <div className="flex flex-col min-h-[100dvh] bg-background">
             <Navbar />
             <main className="flex-1">
-              <Switch>
-                <Route path="/" component={Discovery} />
-                <Route path="/shifts/:id" component={ShiftDetail} />
-                <Route path="/publish" component={Publish} />
-                <Route path="/my-shifts" component={MyShifts} />
-                <Route path="/candidates/:shiftId" component={Candidates} />
-                <Route component={NotFound} />
-              </Switch>
+              <DoctorAccessGate>
+                <Switch>
+                  <Route path="/" component={Discovery} />
+                  <Route path="/shifts/:id" component={ShiftDetail} />
+                  <Route path="/publish" component={Publish} />
+                  <Route path="/my-shifts" component={MyShifts} />
+                  <Route path="/candidates/:shiftId" component={Candidates} />
+                  <Route component={NotFound} />
+                </Switch>
+              </DoctorAccessGate>
             </main>
           </div>
         </Route>
@@ -56,6 +69,9 @@ function Router() {
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
+  useEffect(() => {
+    void trackPage(location);
+  }, [location]);
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 

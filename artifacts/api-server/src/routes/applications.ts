@@ -1,12 +1,22 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, applicationsTable, shiftsTable, usersTable } from "@workspace/db";
+import {
+  db,
+  applicationsTable,
+  paymentsTable,
+  shiftsTable,
+  usersTable,
+} from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import {
   CreateApplicationBody,
   UpdateApplicationBody,
   UpdateApplicationParams,
 } from "@workspace/api-zod";
-import { requireAuth, requireDoctor } from "../middlewares/auth";
+import {
+  requireActiveDoctorSubscription,
+  requireAuth,
+} from "../middlewares/auth";
+import { formatPayment } from "../services/payments";
 
 const router: IRouter = Router();
 
@@ -47,20 +57,22 @@ function formatShiftForApp(shift: typeof shiftsTable.$inferSelect, hospitalName:
 }
 
 // GET /applications - list current user's applications
-router.get("/applications", requireAuth, async (req: Request, res: Response): Promise<void> => {
+router.get("/applications", requireActiveDoctorSubscription, async (req: Request, res: Response): Promise<void> => {
   const rows = await db
     .select({
       application: applicationsTable,
       shift: shiftsTable,
       hospital: usersTable,
+      payment: paymentsTable,
     })
     .from(applicationsTable)
     .leftJoin(shiftsTable, eq(applicationsTable.shiftId, shiftsTable.id))
     .leftJoin(usersTable, eq(shiftsTable.hospitalId, usersTable.id))
+    .leftJoin(paymentsTable, eq(paymentsTable.applicationId, applicationsTable.id))
     .where(eq(applicationsTable.doctorId, req.appUserId!))
     .orderBy(desc(applicationsTable.createdAt));
 
-  const applications = rows.map(({ application, shift, hospital }) => ({
+  const applications = rows.map(({ application, shift, hospital, payment }) => ({
     id: application.id,
     shiftId: application.shiftId,
     doctorId: application.doctorId,
@@ -71,13 +83,14 @@ router.get("/applications", requireAuth, async (req: Request, res: Response): Pr
       : undefined,
     createdAt: application.createdAt.toISOString(),
     updatedAt: application.updatedAt.toISOString(),
+    payment: formatPayment(payment),
   }));
 
   res.json(applications);
 });
 
 // POST /applications - doctor applies to a shift
-router.post("/applications", requireDoctor, async (req: Request, res: Response): Promise<void> => {
+router.post("/applications", requireActiveDoctorSubscription, async (req: Request, res: Response): Promise<void> => {
   const parsed = CreateApplicationBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -198,6 +211,7 @@ router.patch("/applications/:id", requireAuth, async (req: Request, res: Respons
     notes: updated.notes,
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),
+    payment: formatPayment(null),
   });
 });
 

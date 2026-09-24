@@ -1,0 +1,13 @@
+# PlantOn
+
+> Plataforma de oportunidades de plantões médicos, com busca por especialidade e localização, mapa e recomendações por inteligência artificial.
+
+## Página pública
+- [Encontrar plantões](https://plataforma-plantoes-medicos.replit.app/): consulta de oportunidades e filtros.
+
+## Funcionamento
+Hospitais podem publicar plantões e analisar candidaturas. Médicos podem consultar oportunidades e se candidatar conforme as condições de acesso do aplicativo.
+Recomendações por IA ajudam na busca e não garantem contratação ou disponibilidade. Valores e condições devem ser conferidos na oportunidade atual.
+
+## Escopo
+Este arquivo descreve o produto; não concede acesso a dados privados. Candidaturas, perfis e pagamentos não são conteúdo público para indexação.
