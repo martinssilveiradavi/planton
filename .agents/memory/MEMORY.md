@@ -7,3 +7,4 @@
 - [Legacy OIDC account linking](legacy-oidc-linking.md) — link an existing password-era account by email only when the provider affirmatively verifies that email.
 - [Asaas sandbox safety](asaas-sandbox-safety.md) — sandbox hostnames vary; detect “sandbox” broadly and never let development call a production Asaas endpoint.
 - [Doctor subscription access](doctor-subscription-access.md) — only webhook-confirmed active subscriptions may use doctor features; cancellation blocks access immediately.
+- [GitHub snapshot sync](github-snapshot-sync.md) — a connected GitHub OAuth integration does not necessarily authenticate the workspace's Git remote; avoid force-pushes and respect secret scanning.
